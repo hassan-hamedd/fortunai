@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Client model for managing tax clients
+model Client {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String
+  company     String
+  taxForm     String
+  statusId    String   // Change from String to String (linking to Status)
+  status      Status   @relation(fields: [statusId], references: [id]) // New relation
+  lastUpdated DateTime @updatedAt
+
+  // Relationships
+  trialBalances    TrialBalance[]
+  adjustments      Adjustment[]
+  taxForms         TaxForm[]
+  reports          Report[]
+  scheduledReports ScheduledReport[]
+  deadlines        Deadline[]
+
+  createdAt DateTime @default(now())
+}
+
+// Trial Balance model
+model TrialBalance {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+  period    String
+  accounts  Account[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Account model for trial balance entries
+model Account {
+  id             String       @id @default(cuid())
+  trialBalanceId String
+  trialBalance   TrialBalance @relation(fields: [trialBalanceId], references: [id])
+  code           String
+  name           String
+  debit          Float        @default(0)
+  credit         Float        @default(0)
+  adjustedDebit  Float        @default(0)
+  adjustedCredit Float        @default(0)
+  transactions   Transaction[]
+}
+
+// Transaction model for account entries
+model Transaction {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id])
+  date        DateTime
+  description String
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// Adjustment model for trial balance adjustments
+model Adjustment {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  date        DateTime
+  accountCode String
+  description String
+  amount      Float
+  type        String   // "debit" or "credit"
+  createdAt   DateTime @default(now())
+}
+
+// Tax Form model
+model TaxForm {
+  id            String    @id @default(cuid())
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id])
+  formType      String
+  taxYear       String
+  status        String
+  filedDate     DateTime?
+  dueDate       DateTime
+  confirmation  String?
+  errors        Json?     // Store validation errors as JSON
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Report model
+model Report {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  name        String
+  type        String
+  format      String
+  dateRange   Json     // Store date range as JSON
+  fields      Json     // Store selected fields as JSON
+  template    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// Scheduled Report model
+model ScheduledReport {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  name        String
+  type        String
+  frequency   String
+  nextRun     DateTime
+  recipients  String[] // Array of email addresses
+  format      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Deadline model for tax filing deadlines
+model Deadline {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  formType    String
+  dueDate     DateTime
+  description String
+  status      String
+  createdAt   DateTime @default(now())
+}
+
+// Status model
+model Status {
+  id        String   @id @default(cuid())
+  title     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients   Client[] @relation
+}
