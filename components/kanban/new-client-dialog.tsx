@@ -70,6 +70,7 @@ export function NewClientDialog({
       lastUpdated: new Date().toISOString(), // Default value for lastUpdated
     },
   });
+  console.log('statuses: ', form.getValues())
 
   useEffect(() => {
     const fetchStatuses = async () => {
@@ -83,7 +84,8 @@ export function NewClientDialog({
     }
   }, [open]);
 
-  const handleSubmit = (values: Client) => {
+  const handleSubmit = async (values: Client) => {
+    console.log('submitting');
     onSubmit({
       ...values,
       lastUpdated: new Date().toISOString(), // Ensure lastUpdated is set correctly
@@ -217,6 +219,20 @@ export function NewClientDialog({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="assignedTo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Assigned To</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Assigned person's name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>

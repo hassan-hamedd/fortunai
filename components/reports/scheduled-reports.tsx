@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Mail, Clock, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Calendar,
+  Mail,
+  Clock,
+  MoreVertical,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -54,11 +62,13 @@ export function ScheduledReports() {
   ]);
 
   const [showDialog, setShowDialog] = useState(false);
-  const [editingReport, setEditingReport] = useState<ScheduledReport | null>(null);
+  const [editingReport, setEditingReport] = useState<ScheduledReport | null>(
+    null
+  );
 
   const handleAddReport = (report: ScheduledReport) => {
     if (editingReport) {
-      setReports(reports.map(r => r.id === editingReport.id ? report : r));
+      setReports(reports.map((r) => (r.id === editingReport.id ? report : r)));
     } else {
       setReports([...reports, { ...report, id: Date.now().toString() }]);
     }
@@ -72,7 +82,7 @@ export function ScheduledReports() {
   };
 
   const handleDelete = (id: string) => {
-    setReports(reports.filter(r => r.id !== id));
+    setReports(reports.filter((r) => r.id !== id));
   };
 
   return (
@@ -95,7 +105,7 @@ export function ScheduledReports() {
               <TableHead>Next Run</TableHead>
               <TableHead>Recipients</TableHead>
               <TableHead>Format</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
+              <TableHead className="w-[100px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -134,7 +144,7 @@ export function ScheduledReports() {
                         <Pencil className="w-4 h-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => handleDelete(report.id)}
                         className="text-red-600"
                       >

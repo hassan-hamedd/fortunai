@@ -15,6 +15,7 @@ model Client {
   phone       String
   company     String
   taxForm     String
+  assignedTo     String
   statusId    String   // Change from String to String (linking to Status)
   status      Status   @relation(fields: [statusId], references: [id]) // New relation
   lastUpdated DateTime @updatedAt

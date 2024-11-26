@@ -19,6 +19,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { Status } from "@/types/status";
+import { useState } from "react";
 
 const formSchema = z.object({
   title: z.string().min(1, "Status title is required"),
@@ -28,7 +31,7 @@ interface NewStatusDialogProps {
   key: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { title: string }) => void;
+  onSubmit: (data: { title: string }) => Promise<void>;
   initialValue: string;
 }
 
@@ -43,10 +46,18 @@ const EditStatusDialog = ({
     resolver: zodResolver(formSchema),
     defaultValues: { title: initialValue },
   });
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (values: { title: string }) => {
-    onSubmit(values);
-    form.reset();
+  const handleSubmit = async (values: { title: string }) => {
+    setLoading(true);
+    try {
+      await onSubmit(values);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,7 +88,9 @@ const EditStatusDialog = ({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Save</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save"}
+              </Button>
             </div>
           </form>
         </Form>

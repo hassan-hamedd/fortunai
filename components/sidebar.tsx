@@ -45,7 +45,7 @@ export default function Sidebar() {
             expanded ? "px-3" : "px-0"
           )}>
             {expanded ? (
-              <h2 className="text-lg font-semibold">Tax Manager</h2>
+              <h2 className="text-lg font-semibold">FortunAI</h2>
             ) : (
               <FileText className="h-6 w-6" />
             )}

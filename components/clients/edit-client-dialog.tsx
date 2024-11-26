@@ -29,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Client } from "@/types/client";
 import { useToast } from "@/hooks/use-toast";
+import { Status } from "@/types/status";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -36,7 +37,7 @@ const formSchema = z.object({
   phone: z.string().min(10, "Phone number must be at least 10 characters"),
   company: z.string().min(2, "Company name must be at least 2 characters"),
   taxForm: z.string().min(1, "Please select a tax form"),
-  status: z.string().min(1, "Please select a status"),
+  statusId: z.string().min(1, "Please select a status"),
   assignedTo: z.string().min(2, "Please specify the assigned person"),
 });
 
@@ -53,6 +54,7 @@ export function EditClientDialog({
   onOpenChange,
   onSave,
 }: EditClientDialogProps) {
+  const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -64,7 +66,7 @@ export function EditClientDialog({
       phone: "",
       company: "",
       taxForm: "",
-      status: "",
+      statusId: "",
       assignedTo: "",
     },
   });
@@ -74,6 +76,18 @@ export function EditClientDialog({
       form.reset(client);
     }
   }, [client, form]);
+
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      const response = await fetch("/api/statuses");
+      const data = await response.json();
+      setStatuses(data); // Set the fetched statuses
+    };
+
+    if (open) {
+      fetchStatuses(); // Fetch statuses when the dialog opens
+    }
+  }, [open]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
@@ -102,6 +116,7 @@ export function EditClientDialog({
       toast({
         title: "Error",
         description: "Error updating client: " + (error as Error).message,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -208,7 +223,7 @@ export function EditClientDialog({
 
               <FormField
                 control={form.control}
-                name="status"
+                name="statusId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
@@ -222,10 +237,11 @@ export function EditClientDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="New">New</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Review">Review</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
+                        {statuses.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.title}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

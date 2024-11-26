@@ -19,6 +19,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const formSchema = z.object({
   title: z.string().min(1, "Status title is required"),
@@ -40,18 +42,31 @@ const NewStatusDialog = ({
     defaultValues: { title: "" },
   });
 
-  const handleSubmit = (values: { title: string }) => {
-    onSubmit(values);
-    form.reset();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (values: { title: string }) => {
+    setLoading(true);
+    try {
+      await onSubmit(values);
+      form.reset();
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Error adding new status: " + (error as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            Add New Status
-          </DialogTitle>
+          <DialogTitle>Add New Status</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -75,14 +90,15 @@ const NewStatusDialog = ({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Save</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save"}
+              </Button>
             </div>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
-}
+};
 
-
-export default NewStatusDialog
+export default NewStatusDialog;

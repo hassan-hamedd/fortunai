@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { EditClientDialog } from "./edit-client-dialog";
-import { NewClientDialog } from "./new-client-dialog";
 import {
   MoreHorizontal,
   Plus,
@@ -34,9 +33,15 @@ import {
 import Link from "next/link";
 import { Client } from "@/types/client";
 import { useToast } from "@/hooks/use-toast";
+import { Status } from "@/types/status";
+import { NewClientDialog } from "../kanban/new-client-dialog";
+import { useKanbanBoardLogic } from "../kanban/kanban-board/logic";
+import dayjs from "@/lib/dayjs";
 
 export function ClientsTable() {
   const { toast } = useToast();
+  const { handleNewClient } = useKanbanBoardLogic();
+
   const [clients, setClients] = useState<Client[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -52,11 +57,14 @@ export function ClientsTable() {
     fetchClients();
   }, []);
 
-  const filteredClients: Client[] = clients.filter((client) =>
-    Object.values(client).some((value) =>
+  const filteredClients: Client[] = clients.filter((client) => {
+    const { statusId, status, id, assignedTo, ...filteredClient } = client;
+    console.log("Object.values(client): ", Object.values(filteredClient));
+
+    return Object.values(filteredClient).some((value) =>
       value.toString().toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+    );
+  });
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
@@ -80,6 +88,7 @@ export function ClientsTable() {
       toast({
         title: "Error",
         description: "Error deleting client: " + (error as Error).message,
+        variant: "destructive",
       });
     }
   };
@@ -95,26 +104,15 @@ export function ClientsTable() {
     setEditingClient(null);
   };
 
-  const handleAddClient = (newClient: Client) => {
-    setClients([...clients, { ...newClient, id: Date.now().toString() }]);
-    setShowNewClientDialog(false);
-  };
-
-  const getStatusBadge = (status) => {
-    const variants = {
-      New: "default",
-      "In Progress": "primary",
-      Review: "warning",
-      Completed: "success",
-    };
-
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+  const getStatusBadge = (status: Status["title"]) => {
+    console.log("status: ", status);
+    return <Badge variant="default">{status}</Badge>;
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-6">
       <div className="flex justify-between items-center">
-        <div className="relative w-72">
+        <div className="relative w-72 mb-6">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search clients..."
@@ -177,9 +175,11 @@ export function ClientsTable() {
                     Form {client.taxForm}
                   </div>
                 </TableCell>
-                <TableCell>{getStatusBadge(client.status)}</TableCell>
+                <TableCell>{getStatusBadge(client.status.title)}</TableCell>
                 <TableCell>{client.assignedTo}</TableCell>
-                <TableCell>{client.lastUpdated}</TableCell>
+                <TableCell>
+                  {dayjs(client.createdAt, "YYYY-MM-DD").format("MMMM D, YYYY")}
+                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -208,17 +208,19 @@ export function ClientsTable() {
         </Table>
       </div>
 
-      <EditClientDialog
-        client={editingClient}
-        open={!!editingClient}
-        onOpenChange={(open) => !open && setEditingClient(null)}
-        onSave={handleSave}
-      />
+      {editingClient && (
+        <EditClientDialog
+          client={editingClient}
+          open={!!editingClient}
+          onOpenChange={(open) => !open && setEditingClient(null)}
+          onSave={handleSave}
+        />
+      )}
 
       <NewClientDialog
         open={showNewClientDialog}
         onOpenChange={setShowNewClientDialog}
-        onSubmit={handleAddClient}
+        onSubmit={handleNewClient}
       />
     </div>
   );

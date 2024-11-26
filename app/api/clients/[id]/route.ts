@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 
 export async function GET(
   request: Request,
@@ -25,12 +25,15 @@ export async function GET(
     });
 
     if (!client) {
-      return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+      return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
     return NextResponse.json(client);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch client' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch client" },
+      { status: 500 }
+    );
   }
 }
 
@@ -42,6 +45,7 @@ export async function PUT(
     const data = await request.json();
     const client = await prisma.client.update({
       where: { id: params.id },
+      include: { status: true },
       data: {
         ...data,
         lastUpdated: new Date(),
@@ -49,7 +53,10 @@ export async function PUT(
     });
     return NextResponse.json(client);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update client' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update client" },
+      { status: 500 }
+    );
   }
 }
 
@@ -61,8 +68,11 @@ export async function DELETE(
     await prisma.client.delete({
       where: { id: params.id },
     });
-    return NextResponse.json({ message: 'Client deleted successfully' });
+    return NextResponse.json({ message: "Client deleted successfully" });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete client' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete client" },
+      { status: 500 }
+    );
   }
 }

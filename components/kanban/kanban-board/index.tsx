@@ -12,12 +12,18 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { KanbanColumn } from "../kanban-column";
 import { KanbanCard } from "../kanban-card";
 import { Button } from "../../ui/button";
-import { PlusCircle } from "lucide-react";
+import { MoreVertical, PlusCircle } from "lucide-react";
 import { NewClientDialog } from "../new-client-dialog";
 import { useKanbanBoardLogic } from "./logic";
 import NewStatusDialog from "../new-status-dialog";
 import { Skeleton } from "../../ui/skeleton";
 import EditStatusDialog from "../edit-status-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const KanbanBoard = () => {
   const {
@@ -49,8 +55,6 @@ const KanbanBoard = () => {
     })
   );
 
-  console.log("columns: ", columns);
-
   if (!mounted || loading) {
     return (
       <div className="mt-6">
@@ -58,7 +62,7 @@ const KanbanBoard = () => {
           <Skeleton className="h-[45px] w-[160px]" />
         </div>
         <div className="grid grid-cols-4 gap-4">
-          {Array.from({ length: 3 }).map((_, index) => (
+          {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton
               key={index}
               className="bg-muted/50 rounded-lg p-4 h-[400px]"
@@ -71,11 +75,25 @@ const KanbanBoard = () => {
 
   return (
     <div className="mt-6">
-      <div className="mb-6">
+      <div className="w-full mb-6 flex items-center justify-between">
         <Button onClick={() => setShowNewClientDialog(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Client
         </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setShowNewStatusDialog(true)}>
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Create New Status
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <DndContext
@@ -102,6 +120,8 @@ const KanbanBoard = () => {
             : Object.values(columns).find((col) =>
                 col.clients.some((client) => client.id === over.id)
               )?.id;
+
+          if (sourceColumn?.id === overColumnId) return;
 
           if (sourceColumn && overColumnId && activeClient) {
             setColumns((prev) => ({
@@ -141,6 +161,7 @@ const KanbanBoard = () => {
               title={column.title}
               clients={column.clients}
               handleEditStatusClick={handleEditStatusClick}
+              handleStatusDelete={handleStatusDelete}
             />
           ))}
         </div>
@@ -159,9 +180,13 @@ const KanbanBoard = () => {
                   statusId: "",
                   email: "",
                   phone: "",
-                  status: "",
+                  status: {
+                    id: "",
+                    title: "",
+                  },
                   assignedTo: "",
                   lastUpdated: "",
+                  createdAt: "",
                 }
               }
             />
@@ -174,12 +199,6 @@ const KanbanBoard = () => {
         onOpenChange={setShowNewClientDialog}
         onSubmit={handleNewClient}
       />
-
-      <div className="mb-6">
-        <Button onClick={() => setShowNewStatusDialog(true)}>
-          Create New Status
-        </Button>
-      </div>
 
       {/* {Object.values(columns).map((column) => (
         <div key={column.id}>

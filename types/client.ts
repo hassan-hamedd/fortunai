@@ -1,3 +1,5 @@
+import { Status } from "./status";
+
 export interface Client {
   id: string;
   name: string;
@@ -6,7 +8,8 @@ export interface Client {
   company: string;
   taxForm: string;
   statusId: string;
-  status: string;
+  status: Status;
   assignedTo: string;
   lastUpdated: string;
-} 
+  createdAt: string;
+}
