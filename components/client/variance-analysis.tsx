@@ -35,7 +35,7 @@ export function VarianceAnalysis({ clientId }: { clientId: string }) {
   return (
     <div className="space-y-6">
       {significantVariances.length > 0 && (
-        <Alert variant="warning">
+        <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Significant Variances Detected</AlertTitle>
           <AlertDescription>
