@@ -8,8 +8,8 @@ import Sidebar from "@/components/sidebar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Tax Accounting App",
-  description: "Professional tax accounting solution for accountants",
+  title: "FortunAI - Tax Accounting App",
+  description: "Professional tax accounting solution for accountants by FortunAI",
 };
 
 export default function RootLayout({
