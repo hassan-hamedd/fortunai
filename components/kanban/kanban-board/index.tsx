@@ -230,8 +230,8 @@ const KanbanBoard = () => {
           key={currentStatus.id}
           open={showEditStatusDialog}
           onOpenChange={setShowEditStatusDialog}
-          onSubmit={(status) => {
-            handleEditStatus(currentStatus, status.title);
+          onSubmit={async (status) => {
+            await handleEditStatus(currentStatus, status.title);
           }}
           initialValue={currentStatus.title}
         />

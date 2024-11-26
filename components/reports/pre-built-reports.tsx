@@ -85,7 +85,10 @@ export function PreBuiltReports() {
         </div>
 
         <div className="flex items-center gap-2">
-          <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+          <DatePickerWithRange 
+            date={dateRange} 
+            setDate={(range) => setDateRange({ from: range.from || dateRange.from, to: range.to || dateRange.to })} 
+          />
           <Button variant="outline" size="icon" onClick={handleExport}>
             <Download className="w-4 h-4" />
           </Button>

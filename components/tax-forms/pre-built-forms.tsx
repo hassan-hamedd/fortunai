@@ -28,11 +28,19 @@ const taxForms = {
   ],
 };
 
+// Define the interface for form data
+interface FormData {
+  income?: number;
+  expenses?: number;
+  taxableIncome?: number;
+  errors?: { field: string; message: string }[]; // Define the structure of errors
+}
+
 export function PreBuiltForms({ clientId }) {
   const [selectedForm, setSelectedForm] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState<FormData>({});
 
   const handleFormSelect = (formId) => {
     // Simulate fetching form data from trial balance
