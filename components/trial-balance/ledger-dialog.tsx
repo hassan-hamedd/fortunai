@@ -19,12 +19,9 @@ import { format } from "date-fns";
 export function LedgerDialog({ open, onOpenChange, account }) {
   if (!account) return null;
 
-  const runningBalance = account.transactions.reduce(
-    (balance, transaction) => {
-      return balance + transaction.debit - transaction.credit;
-    },
-    0
-  );
+  const runningBalance = account.transactions.reduce((balance, transaction) => {
+    return balance + transaction.debit - transaction.credit;
+  }, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,12 +31,12 @@ export function LedgerDialog({ open, onOpenChange, account }) {
             {account.code} - {account.name} Ledger
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="mt-4">
           <div className="mb-4 text-sm text-muted-foreground">
             Running Balance: ${runningBalance.toLocaleString()}
           </div>
-          
+
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -59,13 +56,19 @@ export function LedgerDialog({ open, onOpenChange, account }) {
 
                   return (
                     <TableRow key={index}>
-                      <TableCell>{format(new Date(transaction.date), "MMM dd, yyyy")}</TableCell>
+                      <TableCell>
+                        {format(new Date(transaction.date), "MMM dd, yyyy")}
+                      </TableCell>
                       <TableCell>{transaction.description}</TableCell>
                       <TableCell className="text-right">
-                        {transaction.debit ? `$${transaction.debit.toLocaleString()}` : "-"}
+                        {transaction.debit
+                          ? `$${transaction.debit.toLocaleString()}`
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {transaction.credit ? `$${transaction.credit.toLocaleString()}` : "-"}
+                        {transaction.credit
+                          ? `$${transaction.credit.toLocaleString()}`
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         ${balance.toLocaleString()}

@@ -38,6 +38,7 @@ const formSchema = z.object({
   taxForm: z.string().min(1, "Please select a tax form"),
   statusId: z.string().min(1, "Please select a status"),
   assignedTo: z.string().min(2, "Please specify the assigned person"),
+  reviewer: z.string().optional(),
 });
 
 interface NewClientDialogProps {
@@ -67,10 +68,11 @@ export function NewClientDialog({
       taxForm: "",
       statusId: "",
       assignedTo: "",
+      reviewer: "",
       lastUpdated: new Date().toISOString(), // Default value for lastUpdated
     },
   });
-  console.log('statuses: ', form.getValues())
+  console.log("statuses: ", form.getValues());
 
   useEffect(() => {
     const fetchStatuses = async () => {
@@ -85,7 +87,7 @@ export function NewClientDialog({
   }, [open]);
 
   const handleSubmit = async (values: Client) => {
-    console.log('submitting');
+    console.log("submitting");
     onSubmit({
       ...values,
       lastUpdated: new Date().toISOString(), // Ensure lastUpdated is set correctly
@@ -228,6 +230,20 @@ export function NewClientDialog({
                   <FormLabel>Assigned To</FormLabel>
                   <FormControl>
                     <Input placeholder="Assigned person's name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="reviewer"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Reviewer</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Reviewer's name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

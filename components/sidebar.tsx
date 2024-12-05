@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 
 export default function Sidebar() {
   const [expanded, setExpanded] = useState(true);
@@ -76,6 +77,16 @@ export default function Sidebar() {
               );
             })}
           </nav>
+        </div>
+      </div>
+
+      <div className="absolute bottom-4 w-full px-3">
+        <div className={cn(
+          "flex items-center justify-center rounded-md p-2",
+          expanded && "justify-between"
+        )}>
+          {expanded && <span className="text-sm text-muted-foreground">Account</span>}
+          <UserButton afterSignOutUrl="/" />
         </div>
       </div>
     </div>

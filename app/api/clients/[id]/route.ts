@@ -21,6 +21,7 @@ export async function GET(
         adjustments: true,
         taxForms: true,
         deadlines: true,
+        status: true,
       },
     });
 

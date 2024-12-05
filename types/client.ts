@@ -10,6 +10,7 @@ export interface Client {
   statusId: string;
   status: Status;
   assignedTo: string;
+  reviewer?: string;
   lastUpdated: string;
   createdAt: string;
 }

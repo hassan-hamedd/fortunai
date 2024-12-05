@@ -16,6 +16,7 @@ model Client {
   company     String
   taxForm     String
   assignedTo     String
+  reviewer       String?    // New optional reviewer field
   statusId    String   // Change from String to String (linking to Status)
   status      Status   @relation(fields: [statusId], references: [id]) // New relation
   lastUpdated DateTime @updatedAt
@@ -27,6 +28,7 @@ model Client {
   reports          Report[]
   scheduledReports ScheduledReport[]
   deadlines        Deadline[]
+  taxCategories    TaxCategory[]
 
   createdAt DateTime @default(now())
 }
@@ -36,7 +38,8 @@ model TrialBalance {
   id        String   @id @default(cuid())
   clientId  String
   client    Client   @relation(fields: [clientId], references: [id])
-  period    String
+  startDate DateTime
+  endDate   DateTime
   accounts  Account[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -54,6 +57,8 @@ model Account {
   adjustedDebit  Float        @default(0)
   adjustedCredit Float        @default(0)
   transactions   Transaction[]
+  taxCategoryId  String?
+  taxCategory    TaxCategory? @relation(fields: [taxCategoryId], references: [id])
 }
 
 // Transaction model for account entries
@@ -146,4 +151,17 @@ model Status {
   updatedAt DateTime @updatedAt
 
   clients   Client[] @relation
+}
+
+// Tax Category model
+model TaxCategory {
+  id        String   @id @default(cuid())
+  name      String
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+  accounts  Account[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, name])
 }
