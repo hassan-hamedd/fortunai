@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Client } from "@/types/client";
 import { FileText, Download, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -29,7 +30,20 @@ export function ClientHeader({ clientId }: { clientId: string }) {
   if (loading) {
     return (
       <Card className="p-6">
-        <div>Loading...</div>
+        <div className="flex justify-between items-start">
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-[200px]" />
+            <div className="flex items-center gap-10">
+              <Skeleton className="h-4 w-[100px]" />
+              <Skeleton className="h-4 w-[120px]" />
+              <Skeleton className="h-4 w-[150px]" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-[100px]" />
+            <Skeleton className="h-10 w-[140px]" />
+          </div>
+        </div>
       </Card>
     );
   }

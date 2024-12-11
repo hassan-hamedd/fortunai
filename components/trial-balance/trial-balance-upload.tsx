@@ -105,7 +105,7 @@ export function TrialBalanceUpload({ clientId }: { clientId: string }) {
         disabled={isUploading}
       >
         <Upload className="mr-2 h-4 w-4" />
-        {isUploading ? "Uploading..." : "Select Excel File"}
+        {isUploading ? "Uploading..." : "Import Trial Balance From Excel"}
       </Button>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

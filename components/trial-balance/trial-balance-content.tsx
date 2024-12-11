@@ -25,6 +25,7 @@ import { TrialBalanceUpload } from "./trial-balance-upload";
 import { useTrialBalance } from "@/hooks/use-trial-balance";
 import { FloatingCategoryDock } from "./floating-category-dock";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function TrialBalanceContent({ clientId }: { clientId: string }) {
   const { trialBalance, loading, error, categories, setCategories } =
@@ -154,7 +155,40 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="mt-6 space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 w-[120px]" />
+            <Skeleton className="h-10 w-[180px]" />
+            <Skeleton className="h-10 w-[160px]" />
+            <Skeleton className="h-10 w-[140px]" />
+          </div>
+          <Skeleton className="h-5 w-[200px]" />
+        </div>
+
+        <div className="rounded-md border">
+          <div className="p-4">
+            <div className="flex items-center space-x-4 mb-6">
+              {Array.from({ length: 9 }).map((_, index) => (
+                <Skeleton key={index} className="h-4 flex-1" />
+              ))}
+            </div>
+
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="space-y-3 mb-4">
+                <Skeleton className="h-6 w-[200px] mb-2" />
+                {Array.from({ length: 3 }).map((_, rowIndex) => (
+                  <Skeleton key={rowIndex} className="h-12 w-full" />
+                ))}
+              </div>
+            ))}
+
+            <Skeleton className="h-12 w-full mt-6" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -166,15 +200,11 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex justify-between items-center">
-        <div className="space-x-2">
+        <div className="flex items-center gap-2">
           <TrialBalanceUpload clientId={clientId} />
           <Button>
             <RefreshCw className="mr-2 h-4 w-4" />
             Sync with QuickBooks
-          </Button>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export
           </Button>
           <Button onClick={() => setShowAdjustmentDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
