@@ -50,6 +50,7 @@ const NewStatusDialog = ({
     try {
       await onSubmit(values);
       form.reset();
+      onOpenChange(false);
     } catch (error) {
       console.error(error);
       toast({

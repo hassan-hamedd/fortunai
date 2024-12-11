@@ -37,6 +37,9 @@ import { Status } from "@/types/status";
 import { NewClientDialog } from "../kanban/new-client-dialog";
 import { useKanbanBoardLogic } from "../kanban/kanban-board/logic";
 import dayjs from "@/lib/dayjs";
+import { StatusGroup } from "./status-group";
+import { StatusDock } from "./status-dock";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function ClientsTable() {
   const { toast } = useToast();
@@ -46,15 +49,31 @@ export function ClientsTable() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<Status[]>([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const [isLoadingStatuses, setIsLoadingStatuses] = useState(true);
 
   useEffect(() => {
     const fetchClients = async () => {
       const response = await fetch("/api/clients");
       const data = await response.json();
       setClients(data);
+      setIsLoadingClients(false);
     };
 
     fetchClients();
+  }, []);
+
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      const response = await fetch("/api/statuses");
+      const data = await response.json();
+      setStatuses(data);
+      setIsLoadingStatuses(false);
+    };
+
+    fetchStatuses();
   }, []);
 
   const filteredClients: Client[] = clients.filter((client) => {
@@ -109,6 +128,93 @@ export function ClientsTable() {
     return <Badge variant="default">{status}</Badge>;
   };
 
+  const handleSelectClient = (clientId: string, isSelected: boolean) => {
+    setSelectedClients((prev) =>
+      isSelected ? [...prev, clientId] : prev.filter((id) => id !== clientId)
+    );
+  };
+
+  const handleMoveClients = async (newStatusId: string) => {
+    try {
+      await Promise.all(
+        selectedClients.map(async (clientId) => {
+          const currentClient = clients.find((c) => c.id === clientId);
+          if (!currentClient) return;
+
+          const { assignedTo, company, email, name, phone, taxForm } =
+            currentClient;
+
+          const response = await fetch(`/api/clients/${clientId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              assignedTo,
+              company,
+              email,
+              name,
+              phone,
+              taxForm,
+              statusId: newStatusId,
+              lastUpdated: new Date().toISOString().split("T")[0],
+            }),
+          });
+
+          if (!response.ok) throw new Error("Failed to update client status");
+
+          const updatedClient = await response.json();
+          setClients((prev) =>
+            prev.map((client) =>
+              client.id === clientId ? updatedClient : client
+            )
+          );
+        })
+      );
+
+      setSelectedClients([]);
+      toast({
+        title: "Success",
+        description: "Clients moved successfully",
+      });
+    } catch (error) {
+      console.error("Failed to move clients:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move clients",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoadingClients || isLoadingStatuses) {
+    return (
+      <div className="space-y-4 mt-6">
+        <div className="flex justify-between items-center">
+          <div className="w-72 mb-6">
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-[120px]" />
+        </div>
+
+        <div className="rounded-md border">
+          <div className="p-4">
+            <div className="flex items-center space-x-4 mb-4">
+              {Array.from({ length: 7 }).map((_, index) => (
+                <Skeleton key={index} className="h-4 w-[100px]" />
+              ))}
+            </div>
+            <div className="flex flex-col items-center mb-4 w-full gap-2">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="space-y-3 w-full">
+                  <Skeleton className="h-12" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 mt-6">
       <div className="flex justify-between items-center">
@@ -141,72 +247,29 @@ export function ClientsTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredClients.map((client) => (
-              <TableRow key={client.id}>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <Link
-                      href={`/clients/${client.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {client.name}
-                    </Link>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Building2 className="mr-1 h-4 w-4" />
-                      {client.company}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col space-y-1">
-                    <div className="flex items-center text-sm">
-                      <Mail className="mr-1 h-4 w-4" />
-                      {client.email}
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Phone className="mr-1 h-4 w-4" />
-                      {client.phone}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <FileText className="mr-1 h-4 w-4" />
-                    Form {client.taxForm}
-                  </div>
-                </TableCell>
-                <TableCell>{getStatusBadge(client.status.title)}</TableCell>
-                <TableCell>{client.assignedTo}</TableCell>
-                <TableCell>
-                  {dayjs(client.createdAt, "YYYY-MM-DD").format("MMMM D, YYYY")}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(client)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(client.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
+            {statuses.map((status) => (
+              <StatusGroup
+                key={status.id}
+                status={status}
+                clients={filteredClients}
+                onClientClick={handleEdit}
+                selectedClients={selectedClients}
+                onSelectClient={handleSelectClient}
+                onClientDelete={handleDelete}
+              />
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {selectedClients.length > 0 && (
+        <StatusDock
+          selectedCount={selectedClients.length}
+          statuses={statuses}
+          onMove={handleMoveClients}
+          onClose={() => setSelectedClients([])}
+        />
+      )}
 
       {editingClient && (
         <EditClientDialog

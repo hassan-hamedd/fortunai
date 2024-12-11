@@ -40,3 +40,13 @@ export async function POST(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const data = await request.json();
+  const { id } = data;
+  await prisma.taxCategory.delete({ where: { id } });
+  return NextResponse.json({ message: "Tax category deleted" });
+}

@@ -54,6 +54,7 @@ export async function PUT(
     });
     return NextResponse.json(client);
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
       { error: "Failed to update client" },
       { status: 500 }

@@ -1,34 +1,53 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useToast } from "./use-toast";
+import { useTrialBalanceContext } from "@/contexts/trial-balance-context";
 
-export function useTrialBalance(clientId: string) {
+export function useTrialBalance(clientId: string | undefined) {
   const { toast } = useToast();
-
-  const [trialBalance, setTrialBalance] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { trialBalance, setTrialBalance, categories, setCategories, setError } =
+    useTrialBalanceContext();
+  const categoriesRef = useRef(categories);
 
   useEffect(() => {
-    async function fetchTrialBalance() {
-      try {
-        const response = await fetch(`/api/clients/${clientId}/trial-balance`);
-        if (!response.ok) throw new Error("Failed to fetch trial balance");
-        const data = await response.json();
-        setTrialBalance(data);
-        setLoading(false);
-      } catch (err) {
-        setError(err);
-        setLoading(false);
-      }
-    }
+    categoriesRef.current = categories;
+  }, [categories]);
 
-    if (clientId) {
-      fetchTrialBalance();
-    }
-  }, [clientId]);
-
+  console.log("categories from hook: ", categories);
   const createAccount = async (newAccount: any) => {
     try {
+      console.log("categories from ref: ", categoriesRef.current);
+
+      if (!newAccount.taxCategoryId) {
+        let uncategorizedCategory = categoriesRef.current.find(
+          (cat) => cat.name.toLowerCase() === "uncategorized"
+        );
+
+        if (!uncategorizedCategory) {
+          const response = await fetch(
+            `/api/clients/${clientId}/tax-categories`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name: "Uncategorized" }),
+            }
+          );
+
+          if (!response.ok) throw new Error("Failed to create tax category");
+
+          uncategorizedCategory = await response.json();
+          console.log("uncategorizedCategory: ", uncategorizedCategory);
+
+          setCategories((prev) => {
+            const updatedCategories = [...prev, uncategorizedCategory];
+            categoriesRef.current = updatedCategories;
+            return updatedCategories;
+          });
+        }
+
+        newAccount.taxCategoryId = uncategorizedCategory.id;
+      }
+
+      // Create the account
       const response = await fetch(
         `/api/clients/${clientId}/trial-balance/accounts`,
         {
@@ -48,9 +67,10 @@ export function useTrialBalance(clientId: string) {
         ...prev,
         accounts: [...prev.accounts, createdAccount],
       }));
+
       toast({
         title: "Success",
-        description: "Account created successfully!",
+        description: `Account ${newAccount.name} created successfully!`,
       });
 
       return createdAccount;
@@ -120,12 +140,63 @@ export function useTrialBalance(clientId: string) {
     }
   };
 
+  const deleteCategory = async (categoryId: string) => {
+    if (
+      trialBalance?.accounts.some((acc) => acc.taxCategoryId === categoryId)
+    ) {
+      toast({
+        title: "Error",
+        description: "Cannot delete category with accounts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const response = await fetch(`/api/clients/${clientId}/tax-categories`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: categoryId }),
+    });
+    if (!response.ok) throw new Error("Failed to delete tax category");
+
+    setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+
+    toast({
+      title: "Success",
+      description: "Tax category deleted successfully",
+    });
+  };
+
+  const deleteAccount = async (accountId: string) => {
+    const response = await fetch(
+      `/api/clients/${clientId}/trial-balance/accounts`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: accountId }),
+      }
+    );
+    if (!response.ok) throw new Error("Failed to delete account");
+
+    setTrialBalance((prev) => ({
+      ...prev,
+      accounts: prev.accounts.filter((acc) => acc.id !== accountId),
+    }));
+
+    toast({
+      title: "Success",
+      description: "Account deleted successfully",
+    });
+  };
+
   return {
     trialBalance,
-    loading,
-    error,
-    createAccount, // Expose the createAccount function
+    createAccount,
     updateAccount,
     addJournalEntry,
+    categories,
+    setCategories,
+    deleteCategory,
+    deleteAccount,
   };
 }

@@ -18,33 +18,31 @@ import { AccountGroup } from "./account-group";
 import { NewCategoryDialog } from "./new-category-dialogue";
 import { ACCOUNT_CATEGORIES } from "@/lib/constants/account-categories";
 import { cn } from "@/lib/utils";
-import { useTrialBalance } from "@/hooks/use-trial-balance";
+import { useTrialBalanceContext } from "@/contexts/trial-balance-context";
 import { Account, TaxCategory } from "./types";
 import { format } from "date-fns";
+import { TrialBalanceUpload } from "./trial-balance-upload";
+import { useTrialBalance } from "@/hooks/use-trial-balance";
+import { FloatingCategoryDock } from "./floating-category-dock";
+import { useToast } from "@/hooks/use-toast";
 
 export function TrialBalanceContent({ clientId }: { clientId: string }) {
+  const { trialBalance, loading, error, categories, setCategories } =
+    useTrialBalanceContext();
   const {
-    trialBalance,
-    loading,
-    error,
+    createAccount,
     updateAccount,
     addJournalEntry,
-    createAccount,
+    deleteAccount,
+    deleteCategory,
   } = useTrialBalance(clientId);
-  const [categories, setCategories] = useState<TaxCategory[]>([]);
+  const { toast } = useToast();
+
   const [showAdjustmentDialog, setShowAdjustmentDialog] = useState(false);
   const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [showLedger, setShowLedger] = useState(false);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const response = await fetch(`/api/clients/${clientId}/tax-categories`);
-      const data = await response.json();
-      setCategories(data);
-    };
-    fetchCategories();
-  }, [trialBalance, clientId]);
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
 
   const handleAddCategory = async (newCategory) => {
     try {
@@ -75,9 +73,7 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
     }
   };
 
-  console.log("trial balance: ", trialBalance);
   const handleAddAccount = async (newAccount: Account) => {
-    console.log("newAccount: ", newAccount);
     try {
       await createAccount(newAccount);
     } catch (error) {
@@ -119,7 +115,44 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
     return Math.abs(totalDebits - totalCredits) < 0.01;
   };
 
-  console.log("trialBalance: ", trialBalance);
+  const handleSelectAccount = (accountId: string, isSelected: boolean) => {
+    setSelectedAccounts((prev) =>
+      isSelected ? [...prev, accountId] : prev.filter((id) => id !== accountId)
+    );
+  };
+
+  const handleMoveAccounts = async (newCategoryId: string) => {
+    try {
+      // Update all selected accounts
+      await Promise.all(
+        selectedAccounts.map((accountId) => {
+          const account = trialBalance.accounts.find(
+            (acc) => acc.id === accountId
+          );
+          return updateAccount(accountId, {
+            ...account,
+            taxCategoryId: newCategoryId,
+          });
+        })
+      );
+
+      // Clear selections after successful move
+      setSelectedAccounts([]);
+
+      toast({
+        title: "Success",
+        description: "Accounts moved successfully",
+      });
+    } catch (error) {
+      console.error("Failed to move accounts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move accounts",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -134,6 +167,7 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
     <div className="mt-6 space-y-4">
       <div className="flex justify-between items-center">
         <div className="space-x-2">
+          <TrialBalanceUpload clientId={clientId} />
           <Button>
             <RefreshCw className="mr-2 h-4 w-4" />
             Sync with QuickBooks
@@ -176,7 +210,6 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
             <TableRow>
               <TableHead>Account Code</TableHead>
               <TableHead>Account Name</TableHead>
-              <TableHead>Tax Category</TableHead>
               <TableHead className="text-right">Unadjusted Debit</TableHead>
               <TableHead className="text-right">Unadjusted Credit</TableHead>
               <TableHead className="text-right">Adjustments Debit</TableHead>
@@ -196,6 +229,10 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
                 onAccountClick={handleAccountClick}
                 onAddAccount={handleAddAccount}
                 onUpdateAccount={handleUpdateAccount}
+                onDeleteAccount={deleteAccount}
+                onDeleteCategory={deleteCategory}
+                selectedAccounts={selectedAccounts}
+                onSelectAccount={handleSelectAccount}
               />
             ))}
 
@@ -252,6 +289,15 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
           </TableBody>
         </Table>
       </div>
+
+      {selectedAccounts.length > 0 && (
+        <FloatingCategoryDock
+          selectedCount={selectedAccounts.length}
+          categories={categories}
+          onMove={handleMoveAccounts}
+          onClose={() => setSelectedAccounts([])}
+        />
+      )}
 
       <AdjustmentDialog
         open={showAdjustmentDialog}

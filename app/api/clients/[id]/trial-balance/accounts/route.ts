@@ -74,3 +74,14 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const data = await request.json();
+  const { id } = data;
+
+  await prisma.account.delete({ where: { id } });
+  return NextResponse.json({ message: "Account deleted" });
+}
