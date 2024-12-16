@@ -124,7 +124,7 @@ export function TrialBalanceUpload({ clientId }: { clientId: string }) {
           {progress > 0 && (
             <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-4">
               <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                className="bg-black h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
