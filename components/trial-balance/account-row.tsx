@@ -15,8 +15,9 @@ export function AccountRow({
   onSelectChange,
   clientId,
 }) {
-  const adjustmentDebit = account.adjustedDebit - account.debit;
-  const adjustmentCredit = account.adjustedCredit - account.credit;
+  const adjustmentDebit =
+    account.debit - account.adjustedDebit + account.credit;
+  const adjustmentCredit = account.adjustedCredit + account.credit;
 
   const [showAttachments, setShowAttachments] = useState(false);
   const [attachments, setAttachments] = useState([]);
@@ -67,12 +68,6 @@ export function AccountRow({
           {account.credit ? `$${account.credit.toLocaleString()}` : "-"}
         </TableCell>
         <TableCell className="text-right">
-          {adjustmentDebit > 0 ? `$${adjustmentDebit.toLocaleString()}` : "-"}
-        </TableCell>
-        <TableCell className="text-right">
-          {adjustmentCredit > 0 ? `$${adjustmentCredit.toLocaleString()}` : "-"}
-        </TableCell>
-        <TableCell className="text-right">
           {account.adjustedDebit
             ? `$${account.adjustedDebit.toLocaleString()}`
             : "-"}
@@ -82,6 +77,8 @@ export function AccountRow({
             ? `$${account.adjustedCredit.toLocaleString()}`
             : "-"}
         </TableCell>
+        <TableCell className="text-right">${adjustmentDebit}</TableCell>
+        <TableCell className="text-right">${adjustmentCredit}</TableCell>
         <TableCell>
           <div className="flex items-center gap-2">
             <ChevronDown
