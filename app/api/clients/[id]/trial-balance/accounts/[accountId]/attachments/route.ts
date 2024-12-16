@@ -26,13 +26,3 @@ export async function POST(
   return NextResponse.json(attachment);
 }
 
-// app/api/clients/accounts/[accountId]/attachments/[attachmentId]/route.ts
-export async function DELETE(
-  request: Request,
-  { params }: { params: { accountId: string; attachmentId: string } }
-) {
-  await prisma.accountAttachment.delete({
-    where: { id: params.attachmentId },
-  });
-  return NextResponse.json({ success: true });
-}
