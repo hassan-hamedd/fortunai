@@ -81,6 +81,8 @@ export async function DELETE(
   const data = await request.json();
   const { id } = data;
 
+  await prisma.accountAttachment.deleteMany({ where: { accountId: id } });
+  await prisma.transaction.deleteMany({ where: { accountId: id } });
   await prisma.account.delete({ where: { id } });
   return NextResponse.json({ message: "Account deleted" });
 }
