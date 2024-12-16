@@ -29,6 +29,7 @@ export function AccountGroup({
   onDeleteCategory,
   selectedAccounts,
   onSelectAccount,
+  clientId,
 }: {
   category: TaxCategory;
   categories: TaxCategory[];
@@ -40,6 +41,7 @@ export function AccountGroup({
   onDeleteCategory: (categoryId: string) => void;
   selectedAccounts: string[];
   onSelectAccount: (accountId: string, isSelected: boolean) => void;
+  clientId: string;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showNewAccountDialog, setShowNewAccountDialog] = useState(false);
@@ -105,6 +107,7 @@ export function AccountGroup({
             onDeleteClick={() => setDeleteAccountId(account.id)}
             isSelected={selectedAccounts.includes(account.id)}
             onSelectChange={onSelectAccount}
+            clientId={clientId}
           />
         ))}
 

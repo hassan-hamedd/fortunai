@@ -46,14 +46,14 @@ export function KanbanColumn({
               className="bg-transparent hover:bg-muted/50 m-0"
               onClick={() => handleEditStatusClick(id, title)}
             >
-              <Pen className="w-[15px] h-[15px] text-white" />
+              <Pen className="w-[15px] h-[15px] text-black dark:text-white" />
             </Button>
             <Button
               className="bg-transparent hover:bg-muted/50 m-0"
               onClick={() => setShowDeleteDialog(true)}
               disabled={clients.length > 0}
             >
-              <Trash className="w-[15px] h-[15px] text-white" />
+              <Trash className="w-[15px] h-[15px] text-black dark:text-white" />
             </Button>
           </div>
         )}

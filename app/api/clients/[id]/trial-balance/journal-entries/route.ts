@@ -7,7 +7,6 @@ export async function POST(
 ) {
   try {
     const data = await request.json();
-    console.log("data: ", data);
 
     // Create transactions for each entry
     const transactions = await prisma.$transaction(

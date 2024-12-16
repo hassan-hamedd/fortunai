@@ -81,7 +81,6 @@ export function AdjustmentDialog({ open, onOpenChange, accounts, onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("submitted");
 
     // Validate debits equal credits
     const totalDebits = journalEntry.entries
@@ -140,7 +139,6 @@ export function AdjustmentDialog({ open, onOpenChange, accounts, onSubmit }) {
 
   const getValidAccounts = (type) => {
     return accounts.filter((account) => {
-      console.log("account:", account);
       // If account has debit balance (positive), it's a debit-normal account
       // If account has credit balance (negative), it's a credit-normal account
       const isDebitAccount = account.debit > 0;
@@ -150,9 +148,6 @@ export function AdjustmentDialog({ open, onOpenChange, accounts, onSubmit }) {
       if (account.credit === 0 && account.debit === 0) {
         return true;
       }
-
-      console.log("isDebitAccount:", isDebitAccount);
-      console.log("isCreditAccount:", isCreditAccount);
 
       return type === "debit" ? isDebitAccount : isCreditAccount;
     });

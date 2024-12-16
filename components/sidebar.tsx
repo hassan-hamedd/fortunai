@@ -15,8 +15,8 @@ export default function Sidebar() {
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
     { href: "/clients", label: "Clients", icon: Users },
-    { href: "/reports", label: "Reports", icon: BarChart3 },
-    { href: "/tax-forms", label: "Tax Forms", icon: FileText },
+    // { href: "/reports", label: "Reports", icon: BarChart3 },
+    // { href: "/tax-forms", label: "Tax Forms", icon: FileText },
   ];
 
   return (

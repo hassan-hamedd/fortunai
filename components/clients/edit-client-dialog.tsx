@@ -39,6 +39,7 @@ const formSchema = z.object({
   taxForm: z.string().min(1, "Please select a tax form"),
   statusId: z.string().min(1, "Please select a status"),
   assignedTo: z.string().min(2, "Please specify the assigned person"),
+  reviewer: z.string().min(2, "Please specify the reviewer"),
 });
 
 interface EditClientDialogProps {
@@ -68,6 +69,7 @@ export function EditClientDialog({
       taxForm: "",
       statusId: "",
       assignedTo: "",
+      reviewer: "",
     },
   });
 
@@ -256,6 +258,20 @@ export function EditClientDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assigned To</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="reviewer"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Reviewer</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>

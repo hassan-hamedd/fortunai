@@ -67,8 +67,6 @@ export const useKanbanBoardLogic = () => {
 
   const handleNewClient = async (newClient: Client) => {
     try {
-      console.log("newClient: ", newClient);
-
       const response = await fetch("/api/clients", {
         method: "POST",
         headers: {
@@ -139,7 +137,10 @@ export const useKanbanBoardLogic = () => {
         await fetch(`/api/statuses/${statusId}`, {
           method: "DELETE",
         });
-        toast({ title: "Success", description: "Status deleted successfully!" });
+        toast({
+          title: "Success",
+          description: "Status deleted successfully!",
+        });
         setColumns((prev) => {
           const { [statusId]: _, ...rest } = prev; // Remove the deleted status
           return rest;
@@ -209,7 +210,7 @@ export const useKanbanBoardLogic = () => {
       }));
 
       toast({ title: "Success", description: "Status updated successfully!" }); // Success toast
-      setShowEditStatusDialog(false)
+      setShowEditStatusDialog(false);
     } catch (error) {
       toast({
         title: "Error",

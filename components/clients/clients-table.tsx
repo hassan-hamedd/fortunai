@@ -78,7 +78,6 @@ export function ClientsTable() {
 
   const filteredClients: Client[] = clients.filter((client) => {
     const { statusId, status, id, assignedTo, ...filteredClient } = client;
-    console.log("Object.values(client): ", Object.values(filteredClient));
 
     return Object.values(filteredClient).some((value) =>
       value.toString().toLowerCase().includes(searchQuery.toLowerCase())
@@ -121,11 +120,6 @@ export function ClientsTable() {
       );
     }
     setEditingClient(null);
-  };
-
-  const getStatusBadge = (status: Status["title"]) => {
-    console.log("status: ", status);
-    return <Badge variant="default">{status}</Badge>;
   };
 
   const handleSelectClient = (clientId: string, isSelected: boolean) => {

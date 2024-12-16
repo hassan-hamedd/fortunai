@@ -202,10 +202,6 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <TrialBalanceUpload clientId={clientId} />
-          <Button>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Sync with QuickBooks
-          </Button>
           <Button onClick={() => setShowAdjustmentDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Journal Entry
@@ -263,6 +259,7 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
                 onDeleteCategory={deleteCategory}
                 selectedAccounts={selectedAccounts}
                 onSelectAccount={handleSelectAccount}
+                clientId={clientId}
               />
             ))}
 

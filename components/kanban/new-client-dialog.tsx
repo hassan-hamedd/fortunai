@@ -72,7 +72,6 @@ export function NewClientDialog({
       lastUpdated: new Date().toISOString(), // Default value for lastUpdated
     },
   });
-  console.log("statuses: ", form.getValues());
 
   useEffect(() => {
     const fetchStatuses = async () => {
@@ -87,7 +86,6 @@ export function NewClientDialog({
   }, [open]);
 
   const handleSubmit = async (values: Client) => {
-    console.log("submitting");
     onSubmit({
       ...values,
       lastUpdated: new Date().toISOString(), // Ensure lastUpdated is set correctly

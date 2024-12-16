@@ -59,6 +59,7 @@ model Account {
   transactions   Transaction[]
   taxCategoryId  String?
   taxCategory    TaxCategory? @relation(fields: [taxCategoryId], references: [id])
+  attachments    AccountAttachment[]
 }
 
 // Transaction model for account entries
@@ -164,4 +165,17 @@ model TaxCategory {
   updatedAt DateTime @updatedAt
 
   @@unique([clientId, name])
+}
+
+// Account Attachment model
+model AccountAttachment {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id])
+  fileName  String
+  fileType  String
+  fileSize  Int
+  fileUrl   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

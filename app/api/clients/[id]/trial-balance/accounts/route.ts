@@ -44,7 +44,6 @@ export async function PUT(
 ) {
   try {
     const data = await request.json();
-    console.log("Received data for update:", data);
 
     if (!data.id) {
       return NextResponse.json(

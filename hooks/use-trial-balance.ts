@@ -12,11 +12,8 @@ export function useTrialBalance(clientId: string | undefined) {
     categoriesRef.current = categories;
   }, [categories]);
 
-  console.log("categories from hook: ", categories);
   const createAccount = async (newAccount: any) => {
     try {
-      console.log("categories from ref: ", categoriesRef.current);
-
       if (!newAccount.taxCategoryId) {
         let uncategorizedCategory = categoriesRef.current.find(
           (cat) => cat.name.toLowerCase() === "uncategorized"
@@ -35,7 +32,6 @@ export function useTrialBalance(clientId: string | undefined) {
           if (!response.ok) throw new Error("Failed to create tax category");
 
           uncategorizedCategory = await response.json();
-          console.log("uncategorizedCategory: ", uncategorizedCategory);
 
           setCategories((prev) => {
             const updatedCategories = [...prev, uncategorizedCategory];
