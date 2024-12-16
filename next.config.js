@@ -6,7 +6,7 @@ const nextConfig = {
 
     return config;
   },
-  swcMinify: false,
+  swcMinify: true,
 };
 
 module.exports = nextConfig;
