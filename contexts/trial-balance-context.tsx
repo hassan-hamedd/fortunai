@@ -6,11 +6,11 @@ import {
   useEffect,
 } from "react";
 import { useParams } from "next/navigation";
-import { TaxCategory } from "@/components/trial-balance/types";
+import { TaxCategory, TrialBalance } from "@/components/trial-balance/types";
 
 interface TrialBalanceContextType {
-  trialBalance: any;
-  setTrialBalance: React.Dispatch<React.SetStateAction<any>>;
+  trialBalance: TrialBalance | null;
+  setTrialBalance: React.Dispatch<React.SetStateAction<TrialBalance | null>>;
   loading: boolean;
   error: Error | null;
   setError: React.Dispatch<React.SetStateAction<Error | null>>;
@@ -26,7 +26,7 @@ export function TrialBalanceProvider({ children }: { children: ReactNode }) {
   const params = useParams();
   const clientId = params?.id as string;
 
-  const [trialBalance, setTrialBalance] = useState(null);
+  const [trialBalance, setTrialBalance] = useState<TrialBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState<TaxCategory[]>([]);
@@ -42,14 +42,15 @@ export function TrialBalanceProvider({ children }: { children: ReactNode }) {
         // Fetch both trial balance and categories in parallel
         const [trialBalanceResponse, categoriesResponse] = await Promise.all([
           fetch(`/api/clients/${clientId}/trial-balance`),
-          fetch(`/api/clients/${clientId}/tax-categories`)
+          fetch(`/api/clients/${clientId}/tax-categories`),
         ]);
 
-        if (!trialBalanceResponse.ok) throw new Error("Failed to fetch trial balance");
-        
+        if (!trialBalanceResponse.ok)
+          throw new Error("Failed to fetch trial balance");
+
         const [trialBalanceData, categoriesData] = await Promise.all([
           trialBalanceResponse.json(),
-          categoriesResponse.json()
+          categoriesResponse.json(),
         ]);
 
         setTrialBalance(trialBalanceData);

@@ -60,6 +60,7 @@ model Account {
   taxCategoryId  String?
   taxCategory    TaxCategory? @relation(fields: [taxCategoryId], references: [id])
   attachments    AccountAttachment[]
+  order          Int         @default(0)
 }
 
 // Transaction model for account entries

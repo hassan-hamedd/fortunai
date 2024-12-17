@@ -7,10 +7,15 @@ export function useTrialBalance(clientId: string | undefined) {
   const { trialBalance, setTrialBalance, categories, setCategories, setError } =
     useTrialBalanceContext();
   const categoriesRef = useRef(categories);
+  const trialBalanceRef = useRef(trialBalance);
 
   useEffect(() => {
     categoriesRef.current = categories;
   }, [categories]);
+
+  useEffect(() => {
+    trialBalanceRef.current = trialBalance;
+  }, [trialBalance]);
 
   const createAccount = async (newAccount: any) => {
     try {
@@ -42,8 +47,18 @@ export function useTrialBalance(clientId: string | undefined) {
 
         newAccount.taxCategoryId = uncategorizedCategory.id;
       }
+      console.log("trialBalance accounts: ", trialBalanceRef.current.accounts);
+      // Calculate the order value for the new account
+      const categoryAccounts = trialBalanceRef.current.accounts
+        .filter((acc) => acc.taxCategoryId === newAccount.taxCategoryId)
+        .sort((a, b) => a.order - b.order);
 
-      // Create the account
+      // If there are existing accounts in the category, place it after the last one
+      // Otherwise, start at 1024 to leave room at the beginning
+      const lastAccount = categoryAccounts[categoryAccounts.length - 1];
+      const newOrder = lastAccount ? lastAccount.order + 1024 : 1024;
+
+      // Create the account with the order value
       const response = await fetch(
         `/api/clients/${clientId}/trial-balance/accounts`,
         {
@@ -51,7 +66,8 @@ export function useTrialBalance(clientId: string | undefined) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...newAccount,
-            trialBalanceId: trialBalance.id,
+            trialBalanceId: trialBalanceRef.current.id,
+            order: newOrder,
           }),
         }
       );
@@ -63,6 +79,11 @@ export function useTrialBalance(clientId: string | undefined) {
         ...prev,
         accounts: [...prev.accounts, createdAccount],
       }));
+      // Update trial balance ref
+      trialBalanceRef.current = {
+        ...trialBalanceRef.current,
+        accounts: [...trialBalanceRef.current.accounts, createdAccount],
+      };
 
       toast({
         title: "Success",

@@ -1,3 +1,11 @@
+export interface TrialBalance {
+  id: string;
+  clientId: string;
+  startDate: Date;
+  endDate: Date;
+  accounts: Account[];
+}
+
 export interface Account {
   id: string;
   trialBalanceId: string;
@@ -11,6 +19,7 @@ export interface Account {
   // Note: Relationships are optional since they might not always be loaded
   transactions?: Transaction[];
   taxCategory?: TaxCategory;
+  order: number;
 }
 
 // You might also want these related interfaces:

@@ -38,24 +38,15 @@ export async function POST(
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request) {
   try {
     const data = await request.json();
-
-    if (!data.id) {
-      return NextResponse.json(
-        { error: "Account ID is required" },
-        { status: 400 }
-      );
-    }
 
     const account = await prisma.account.update({
       where: { id: data.id },
       data: {
         taxCategoryId: data.taxCategoryId,
+        order: data.order || 0,
         adjustedDebit: data.adjustedDebit,
         adjustedCredit: data.adjustedCredit,
       },
@@ -64,6 +55,7 @@ export async function PUT(
         taxCategory: true,
       },
     });
+
     return NextResponse.json(account);
   } catch (error) {
     console.error("Error updating account:", error);

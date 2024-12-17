@@ -17,6 +17,11 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 
 export function AccountGroup({
   category,
@@ -48,18 +53,31 @@ export function AccountGroup({
   const [deleteAccountId, setDeleteAccountId] = useState<string | null>(null);
   const [showDeleteCategory, setShowDeleteCategory] = useState(false);
 
-  const groupAccounts = accounts.filter(
-    (account) => account.taxCategoryId === category.id
-  );
+  const groupAccounts = accounts
+    .filter((account) => account.taxCategoryId === category.id)
+    .sort((a, b) => a.order - b.order);
 
   const handleAddAccount = async (account: Account) => {
     await onAddAccount(account);
     setShowNewAccountDialog(false);
   };
 
+  const { setNodeRef } = useDroppable({
+    id: category.id,
+    data: {
+      type: "category",
+      category,
+    },
+  });
+
   return (
     <>
-      <TableRow className="bg-muted/50 hover:bg-muted group">
+      <TableRow
+        ref={setNodeRef}
+        className="bg-muted/50 hover:bg-muted group"
+        data-type="category"
+        data-id={category.id}
+      >
         <TableCell colSpan={2} className="font-medium">
           <div className="flex items-center justify-between">
             <div
@@ -97,19 +115,25 @@ export function AccountGroup({
         <TableCell colSpan={8}></TableCell>
       </TableRow>
 
-      {isExpanded &&
-        groupAccounts.map((account) => (
-          <AccountRow
-            key={account.code}
-            account={account}
-            onClick={() => onAccountClick(account)}
-            onUpdateAccount={onUpdateAccount}
-            onDeleteClick={() => setDeleteAccountId(account.id)}
-            isSelected={selectedAccounts.includes(account.id)}
-            onSelectChange={onSelectAccount}
-            clientId={clientId}
-          />
-        ))}
+      {isExpanded && (
+        <SortableContext
+          items={groupAccounts.map((acc) => acc.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {groupAccounts.map((account) => (
+            <AccountRow
+              key={account.id}
+              account={account}
+              onClick={() => onAccountClick(account)}
+              onUpdateAccount={onUpdateAccount}
+              onDeleteClick={() => setDeleteAccountId(account.id)}
+              isSelected={selectedAccounts.includes(account.id)}
+              onSelectChange={onSelectAccount}
+              clientId={clientId}
+            />
+          ))}
+        </SortableContext>
+      )}
 
       {isExpanded && (
         <TableRow className="bg-muted/30">

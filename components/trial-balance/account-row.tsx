@@ -1,10 +1,12 @@
 "use client";
 
 import { TableCell, TableRow } from "@/components/ui/table";
-import { ChevronDown, Trash2, Paperclip } from "lucide-react";
+import { ChevronDown, Trash2, Paperclip, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useCallback, useEffect } from "react";
 import { AccountAttachmentDialog } from "./account-attachment-dialog";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export function AccountRow({
   account,
@@ -14,9 +16,9 @@ export function AccountRow({
   isSelected,
   onSelectChange,
   clientId,
+  isDragging = false,
 }) {
-  const adjustmentDebit =
-    account.debit - account.adjustedDebit + account.credit;
+  const adjustmentDebit = account.adjustedDebit + account.debit;
   const adjustmentCredit = account.adjustedCredit + account.credit;
 
   const [showAttachments, setShowAttachments] = useState(false);
@@ -45,20 +47,48 @@ export function AccountRow({
     });
   };
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ id: account.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging || isSortableDragging ? 0.5 : 1,
+  };
+
   return (
     <>
       <TableRow
-        className={cn("hover:bg-muted/50 group", isSelected && "bg-primary/10")}
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "hover:bg-muted/50 group",
+          isSelected && "bg-primary/10",
+          (isDragging || isSortableDragging) && "cursor-grabbing"
+        )}
       >
         <TableCell className="pl-8">
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={(e) => onSelectChange(account.id, e.target.checked)}
-            onClick={(e) => e.stopPropagation()}
-            className="mr-2"
-          />
-          {account.code}
+          <div className="flex items-center gap-2">
+            <GripVertical
+              className="h-4 w-4 text-muted-foreground cursor-grab focus:outline-none"
+              {...attributes}
+              {...listeners}
+            />
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => onSelectChange(account.id, e.target.checked)}
+              onClick={(e) => e.stopPropagation()}
+              className="mr-2"
+            />
+            {account.code}
+          </div>
         </TableCell>
         <TableCell>{account.name}</TableCell>
         <TableCell className="text-right">

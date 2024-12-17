@@ -26,10 +26,25 @@ import { useTrialBalance } from "@/hooks/use-trial-balance";
 import { FloatingCategoryDock } from "./floating-category-dock";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { AccountRow } from "./account-row";
 
 export function TrialBalanceContent({ clientId }: { clientId: string }) {
-  const { trialBalance, loading, error, categories, setCategories } =
-    useTrialBalanceContext();
+  const {
+    trialBalance,
+    setTrialBalance,
+    loading,
+    error,
+    categories,
+    setCategories,
+  } = useTrialBalanceContext();
   const {
     createAccount,
     updateAccount,
@@ -44,6 +59,8 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [showLedger, setShowLedger] = useState(false);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const sensors = useSensors(useSensor(PointerSensor));
+  const [activeId, setActiveId] = useState(null);
 
   const handleAddCategory = async (newCategory) => {
     try {
@@ -154,6 +171,151 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
     }
   };
 
+  const calculateNewOrder = (beforeOrder: number, afterOrder: number) => {
+    // If inserting at start
+    if (!beforeOrder) return afterOrder / 2;
+    // If inserting at end
+    if (!afterOrder) return beforeOrder + 1024;
+    // Insert between
+    return beforeOrder + (afterOrder - beforeOrder) / 2;
+  };
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    console.log('over: ', over)
+    if (!over || active.id === over.id) {
+      console.log('no over or active.id === over.id');
+      return;
+    }
+
+    const activeAccount = trialBalance.accounts.find(
+      (acc) => acc.id === active.id
+    );
+
+    // Find if we're dropping onto a category row instead of an account
+    const targetCategory = categories.find(cat => cat.id === over.id);
+    console.log('targetCategory: ', targetCategory)
+    const overAccount = trialBalance.accounts.find(
+      (acc) => acc.id === over.id
+    );
+
+    if (!activeAccount) return;
+
+    // Store original state for rollback
+    const originalAccounts = [...trialBalance.accounts];
+    
+    try {
+      // If dropping onto a category directly
+      if (targetCategory) {
+        // Use 1024 as the first order value for an empty category
+        const newOrder = 1024;
+
+        // Optimistically update UI
+        setTrialBalance(prev => ({
+          ...prev,
+          accounts: prev.accounts.map(acc => 
+            acc.id === activeAccount.id 
+              ? { ...acc, taxCategoryId: targetCategory.id, order: newOrder }
+              : acc
+          )
+        }));
+
+        // Update database
+        await updateAccount(activeAccount.id, {
+          ...activeAccount,
+          taxCategoryId: targetCategory.id,
+          order: newOrder,
+        });
+      }
+      // If dropping onto another account
+      else if (overAccount) {
+        if (activeAccount.taxCategoryId !== overAccount.taxCategoryId) {
+          const categoryAccounts = trialBalance.accounts
+            .filter((acc) => acc.taxCategoryId === overAccount.taxCategoryId)
+            .sort((a, b) => a.order - b.order);
+
+          const overIndex = categoryAccounts.findIndex(
+            (acc) => acc.id === over.id
+          );
+
+          const beforeAccount = categoryAccounts[overIndex - 1];
+          const afterAccount = categoryAccounts[overIndex];
+
+          const newOrder = calculateNewOrder(
+            beforeAccount?.order || 0,
+            afterAccount?.order || 0
+          );
+
+          // Optimistically update UI
+          setTrialBalance(prev => ({
+            ...prev,
+            accounts: prev.accounts.map(acc => 
+              acc.id === activeAccount.id 
+                ? { ...acc, taxCategoryId: overAccount.taxCategoryId, order: newOrder }
+                : acc
+            )
+          }));
+
+          // Update database
+          await updateAccount(activeAccount.id, {
+            ...activeAccount,
+            taxCategoryId: overAccount.taxCategoryId,
+            order: newOrder,
+          });
+        } else {
+          // Reordering within same category
+          const categoryAccounts = trialBalance.accounts
+            .filter((acc) => acc.taxCategoryId === activeAccount.taxCategoryId)
+            .sort((a, b) => a.order - b.order);
+
+          const overIndex = categoryAccounts.findIndex(
+            (acc) => acc.id === over.id
+          );
+
+          const beforeAccount = categoryAccounts[overIndex - 1];
+          const afterAccount = categoryAccounts[overIndex];
+
+          const newOrder = calculateNewOrder(
+            beforeAccount?.order || 0,
+            afterAccount?.order || 0
+          );
+
+          // Optimistically update UI
+          setTrialBalance(prev => ({
+            ...prev,
+            accounts: prev.accounts.map(acc => 
+              acc.id === activeAccount.id 
+                ? { ...acc, order: newOrder }
+                : acc
+            )
+          }));
+
+          // Update database
+          await updateAccount(activeAccount.id, {
+            ...activeAccount,
+            order: newOrder,
+          });
+        }
+      }
+    } catch (error) {
+      // Rollback to original state
+      setTrialBalance((prev) => ({
+        ...prev,
+        accounts: originalAccounts,
+      }));
+
+      // Show error toast
+      toast({
+        title: "Error",
+        description:
+          "Failed to update account order. Changes have been reverted.",
+        variant: "destructive",
+      });
+
+      console.error("Failed to update account order:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mt-6 space-y-4">
@@ -230,91 +392,118 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
         </Alert>
       )}
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Account Code</TableHead>
-              <TableHead>Account Name</TableHead>
-              <TableHead className="text-right">Unadjusted Debit</TableHead>
-              <TableHead className="text-right">Unadjusted Credit</TableHead>
-              <TableHead className="text-right">Adjustments Debit</TableHead>
-              <TableHead className="text-right">Adjustments Credit</TableHead>
-              <TableHead className="text-right">Adjusted Debit</TableHead>
-              <TableHead className="text-right">Adjusted Credit</TableHead>
-              <TableHead className="w-8"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Object.values(categories).map((category) => (
-              <AccountGroup
-                key={category.id}
-                category={category}
-                categories={categories}
-                accounts={trialBalance?.accounts || []}
-                onAccountClick={handleAccountClick}
-                onAddAccount={handleAddAccount}
-                onUpdateAccount={handleUpdateAccount}
-                onDeleteAccount={deleteAccount}
-                onDeleteCategory={deleteCategory}
-                selectedAccounts={selectedAccounts}
-                onSelectAccount={handleSelectAccount}
-                clientId={clientId}
-              />
-            ))}
+      <div className="rounded-md border relative">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={(event) => setActiveId(event.active.id)}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveId(null)}
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Account Code</TableHead>
+                <TableHead>Account Name</TableHead>
+                <TableHead className="text-right">Unadjusted Debit</TableHead>
+                <TableHead className="text-right">Unadjusted Credit</TableHead>
+                <TableHead className="text-right">Adjustments Debit</TableHead>
+                <TableHead className="text-right">Adjustments Credit</TableHead>
+                <TableHead className="text-right">Adjusted Debit</TableHead>
+                <TableHead className="text-right">Adjusted Credit</TableHead>
+                <TableHead className="w-8"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Object.values(categories).map((category) => (
+                <AccountGroup
+                  key={category.id}
+                  category={category}
+                  categories={categories}
+                  accounts={trialBalance?.accounts || []}
+                  onAccountClick={handleAccountClick}
+                  onAddAccount={handleAddAccount}
+                  onUpdateAccount={handleUpdateAccount}
+                  onDeleteAccount={deleteAccount}
+                  onDeleteCategory={deleteCategory}
+                  selectedAccounts={selectedAccounts}
+                  onSelectAccount={handleSelectAccount}
+                  clientId={clientId}
+                />
+              ))}
 
-            <TableRow
-              className={cn("font-semibold", !isBalanced && "text-destructive")}
-            >
-              <TableCell colSpan={3}>Total</TableCell>
-              <TableCell className="text-right">
-                $
-                {trialBalance?.accounts
-                  .reduce((sum, account) => sum + account.debit, 0)
-                  .toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                $
-                {trialBalance?.accounts
-                  .reduce((sum, account) => sum + account.credit, 0)
-                  .toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                $
-                {trialBalance?.accounts
-                  .reduce(
-                    (sum, account) =>
-                      sum + (account.adjustedDebit - account.debit),
-                    0
-                  )
-                  .toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                $
-                {trialBalance?.accounts
-                  .reduce(
-                    (sum, account) =>
-                      sum + (account.adjustedCredit - account.credit),
-                    0
-                  )
-                  .toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                $
-                {trialBalance?.accounts
-                  .reduce((sum, account) => sum + account.adjustedDebit, 0)
-                  .toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                $
-                {trialBalance?.accounts
-                  .reduce((sum, account) => sum + account.adjustedCredit, 0)
-                  .toLocaleString()}
-              </TableCell>
-              <TableCell></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+              <TableRow
+                className={cn(
+                  "font-semibold",
+                  !isBalanced && "text-destructive"
+                )}
+              >
+                <TableCell colSpan={3}>Total</TableCell>
+                <TableCell className="text-right">
+                  $
+                  {trialBalance?.accounts
+                    .reduce((sum, account) => sum + account.debit, 0)
+                    .toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  $
+                  {trialBalance?.accounts
+                    .reduce((sum, account) => sum + account.credit, 0)
+                    .toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  $
+                  {trialBalance?.accounts
+                    .reduce(
+                      (sum, account) =>
+                        sum + (account.adjustedDebit - account.debit),
+                      0
+                    )
+                    .toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  $
+                  {trialBalance?.accounts
+                    .reduce(
+                      (sum, account) =>
+                        sum + (account.adjustedCredit - account.credit),
+                      0
+                    )
+                    .toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  $
+                  {trialBalance?.accounts
+                    .reduce((sum, account) => sum + account.adjustedDebit, 0)
+                    .toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  $
+                  {trialBalance?.accounts
+                    .reduce((sum, account) => sum + account.adjustedCredit, 0)
+                    .toLocaleString()}
+                </TableCell>
+                <TableCell></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <DragOverlay>
+            {activeId ? (
+              <AccountRow
+                account={trialBalance.accounts.find(
+                  (acc) => acc.id === activeId
+                )}
+                onClick={() => {}}
+                onUpdateAccount={() => {}}
+                onDeleteClick={() => {}}
+                isSelected={false}
+                onSelectChange={() => {}}
+                clientId={clientId}
+                isDragging={true}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
 
       {selectedAccounts.length > 0 && (
