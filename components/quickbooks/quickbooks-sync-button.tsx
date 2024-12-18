@@ -16,11 +16,23 @@ export function QuickBooksSyncButton({ clientId }: { clientId: string }) {
         method: "POST",
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to sync with QuickBooks");
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error === "QUICKBOOKS_REAUTHORIZATION_REQUIRED") {
+          toast({
+            title: "QuickBooks Reconnection Required",
+            description:
+              "Your QuickBooks connection has expired. Please reconnect your account.",
+            variant: "destructive",
+          });
+
+          // Optionally, trigger reconnection flow
+          window.location.href = `/api/quickbooks/connect?clientId=${clientId}`;
+          return;
+        }
+        throw new Error(data.message || "Failed to sync with QuickBooks");
+      }
 
       toast({
         title: "Success",
@@ -32,7 +44,7 @@ export function QuickBooksSyncButton({ clientId }: { clientId: string }) {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to sync with QuickBooks",
+        description: error.message || "Failed to sync with QuickBooks",
         variant: "destructive",
       });
     } finally {

@@ -38,15 +38,29 @@ export class QuickBooksClient {
   }
 
   async refreshTokens(refreshToken: string) {
-    this.oauthClient.setToken({
-      refresh_token: refreshToken,
-    });
-    const response = await this.oauthClient.refresh();
-    return {
-      access_token: response.token.access_token,
-      refresh_token: response.token.refresh_token,
-      expires_at: Date.now() + response.token.expires_in * 1000,
-    };
+    try {
+      this.oauthClient.setToken({
+        refresh_token: refreshToken,
+      });
+      console.log("refreshing tokens");
+      const response = await this.oauthClient.refresh();
+      return {
+        access_token: response.token.access_token,
+        refresh_token: response.token.refresh_token,
+        expires_at: Date.now() + response.token.expires_in * 1000,
+      };
+    } catch (error) {
+      console.error("Error refreshing tokens:", error);
+      // Check if refresh token is expired or invalid
+      if (
+        error.message?.includes("invalid_grant") ||
+        error.message?.includes("Token expired") ||
+        error.message?.includes("The Refresh token is invalid, please Authorize again.")
+      ) {
+        throw new Error("REFRESH_TOKEN_EXPIRED");
+      }
+      throw error;
+    }
   }
 
   async getAccounts(accessToken: string, realmId: string) {

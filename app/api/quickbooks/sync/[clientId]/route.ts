@@ -24,18 +24,43 @@ export async function POST(
     const qbClient = new QuickBooksClient();
     let accessToken = integration.accessToken;
 
-    if (new Date(integration.expiresAt) <= new Date()) {
-      const tokens = await qbClient.refreshTokens(integration.refreshToken);
-      accessToken = tokens.access_token;
+    try {
+      if (new Date(integration.expiresAt) <= new Date()) {
+        console.log("refreshing tokens");
+        const tokens = await qbClient.refreshTokens(integration.refreshToken);
+        accessToken = tokens.access_token;
 
-      await prisma.quickBooksIntegration.update({
-        where: { clientId },
-        data: {
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          expiresAt: new Date(tokens.expires_at),
-        },
-      });
+        await prisma.quickBooksIntegration.update({
+          where: { clientId },
+          data: {
+            accessToken: tokens.access_token,
+            refreshToken: tokens.refresh_token,
+            expiresAt: new Date(tokens.expires_at),
+          },
+        });
+      }
+    } catch (error) {
+      if (error.message === "REFRESH_TOKEN_EXPIRED") {
+        // Delete the integration since it's no longer valid
+        await prisma.quickBooksIntegration.delete({
+          where: { clientId },
+        });
+
+        return new Response(
+          JSON.stringify({
+            error: "QUICKBOOKS_REAUTHORIZATION_REQUIRED",
+            message:
+              "QuickBooks authorization has expired. Please reconnect your account.",
+          }),
+          {
+            status: 401,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+      throw error;
     }
 
     // Fetch accounts from QuickBooks
@@ -223,7 +248,6 @@ export async function POST(
       trialBalance: updatedTrialBalance,
     });
   } catch (error) {
-    console.error("QuickBooks sync error:", error);
     return new Response("Failed to sync with QuickBooks", { status: 500 });
   }
 }
