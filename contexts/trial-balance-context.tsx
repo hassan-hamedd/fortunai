@@ -57,6 +57,7 @@ export function TrialBalanceProvider({ children }: { children: ReactNode }) {
         setCategories(categoriesData);
         setLoading(false);
       } catch (err) {
+        console.error("Error fetching trial balance:", err);
         setError(err);
         setLoading(false);
       }

@@ -72,13 +72,9 @@ export function ClientHeader({ clientId }: { clientId: string }) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button>
             <Download className="w-4 h-4 mr-2" />
             Export
-          </Button>
-          <Button>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Sync QuickBooks
           </Button>
         </div>
       </div>

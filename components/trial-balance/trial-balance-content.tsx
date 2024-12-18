@@ -35,6 +35,8 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { AccountRow } from "./account-row";
+import { QuickBooksConnectButton } from "../quickbooks/quickbooks-connect-button";
+import { QuickBooksSyncButton } from "../quickbooks/quickbooks-sync-button";
 
 export function TrialBalanceContent({ clientId }: { clientId: string }) {
   const {
@@ -61,6 +63,24 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const sensors = useSensors(useSensor(PointerSensor));
   const [activeId, setActiveId] = useState(null);
+  const [isConnectedToQuickBooks, setIsConnectedToQuickBooks] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await fetch(`/api/quickbooks/status/${clientId}`);
+        const data = await response.json();
+        setIsConnectedToQuickBooks(data.isConnected);
+      } catch (error) {
+        console.error("Failed to check QuickBooks connection:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkConnection();
+  }, [clientId]);
 
   const handleAddCategory = async (newCategory) => {
     try {
@@ -182,9 +202,9 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
-    console.log('over: ', over)
+    console.log("over: ", over);
     if (!over || active.id === over.id) {
-      console.log('no over or active.id === over.id');
+      console.log("no over or active.id === over.id");
       return;
     }
 
@@ -193,17 +213,15 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
     );
 
     // Find if we're dropping onto a category row instead of an account
-    const targetCategory = categories.find(cat => cat.id === over.id);
-    console.log('targetCategory: ', targetCategory)
-    const overAccount = trialBalance.accounts.find(
-      (acc) => acc.id === over.id
-    );
+    const targetCategory = categories.find((cat) => cat.id === over.id);
+    console.log("targetCategory: ", targetCategory);
+    const overAccount = trialBalance.accounts.find((acc) => acc.id === over.id);
 
     if (!activeAccount) return;
 
     // Store original state for rollback
     const originalAccounts = [...trialBalance.accounts];
-    
+
     try {
       // If dropping onto a category directly
       if (targetCategory) {
@@ -211,13 +229,13 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
         const newOrder = 1024;
 
         // Optimistically update UI
-        setTrialBalance(prev => ({
+        setTrialBalance((prev) => ({
           ...prev,
-          accounts: prev.accounts.map(acc => 
-            acc.id === activeAccount.id 
+          accounts: prev.accounts.map((acc) =>
+            acc.id === activeAccount.id
               ? { ...acc, taxCategoryId: targetCategory.id, order: newOrder }
               : acc
-          )
+          ),
         }));
 
         // Update database
@@ -247,13 +265,17 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
           );
 
           // Optimistically update UI
-          setTrialBalance(prev => ({
+          setTrialBalance((prev) => ({
             ...prev,
-            accounts: prev.accounts.map(acc => 
-              acc.id === activeAccount.id 
-                ? { ...acc, taxCategoryId: overAccount.taxCategoryId, order: newOrder }
+            accounts: prev.accounts.map((acc) =>
+              acc.id === activeAccount.id
+                ? {
+                    ...acc,
+                    taxCategoryId: overAccount.taxCategoryId,
+                    order: newOrder,
+                  }
                 : acc
-            )
+            ),
           }));
 
           // Update database
@@ -281,13 +303,11 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
           );
 
           // Optimistically update UI
-          setTrialBalance(prev => ({
+          setTrialBalance((prev) => ({
             ...prev,
-            accounts: prev.accounts.map(acc => 
-              acc.id === activeAccount.id 
-                ? { ...acc, order: newOrder }
-                : acc
-            )
+            accounts: prev.accounts.map((acc) =>
+              acc.id === activeAccount.id ? { ...acc, order: newOrder } : acc
+            ),
           }));
 
           // Update database
@@ -364,6 +384,12 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <TrialBalanceUpload clientId={clientId} />
+          <QuickBooksConnectButton clientId={clientId} />
+          {isConnectedToQuickBooks && (
+            <QuickBooksSyncButton clientId={clientId} />
+          )}
+        </div>
+        <div className="flex items-center gap-2">
           <Button onClick={() => setShowAdjustmentDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Journal Entry

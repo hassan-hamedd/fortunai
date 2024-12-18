@@ -29,6 +29,8 @@ model Client {
   scheduledReports ScheduledReport[]
   deadlines        Deadline[]
   taxCategories    TaxCategory[]
+  quickBooksIntegration QuickBooksIntegration?
+  quickBooksConnections QuickBooksConnection[]
 
   createdAt DateTime @default(now())
 }
@@ -179,4 +181,38 @@ model AccountAttachment {
   fileUrl   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model QuickBooksIntegration {
+  id            String   @id @default(cuid())
+  clientId      String   @unique
+  client        Client   @relation(fields: [clientId], references: [id])
+  realmId       String
+  accessToken   String
+  refreshToken  String
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AccountantQuickBooks {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  accessToken   String
+  refreshToken  String
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  connections   QuickBooksConnection[]
+}
+
+model QuickBooksConnection {
+  id            String    @id @default(cuid())
+  accountantId  String
+  accountant    AccountantQuickBooks @relation(fields: [accountantId], references: [id])
+  clientId      String    @unique
+  client        Client    @relation(fields: [clientId], references: [id])
+  realmId       String    // QBO company ID
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

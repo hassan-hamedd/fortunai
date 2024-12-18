@@ -132,52 +132,51 @@ export function AccountGroup({
               clientId={clientId}
             />
           ))}
+          <TableRow className="bg-muted/30">
+            <TableCell className="font-medium">{category.name} Total</TableCell>
+            <TableCell />
+            <TableCell className="text-right">
+              $
+              {groupAccounts
+                .reduce((sum, acc) => sum + acc.debit, 0)
+                .toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              $
+              {groupAccounts
+                .reduce((sum, acc) => sum + acc.credit, 0)
+                .toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              $
+              {groupAccounts
+                .reduce((sum, acc) => sum + acc.adjustedDebit, 0)
+                .toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              $
+              {groupAccounts
+                .reduce((sum, acc) => sum + acc.adjustedCredit, 0)
+                .toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              $
+              {groupAccounts
+                .reduce((sum, acc) => sum + (acc.adjustedDebit + acc.debit), 0)
+                .toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              $
+              {groupAccounts
+                .reduce(
+                  (sum, acc) => sum + (acc.adjustedCredit + acc.credit),
+                  0
+                )
+                .toLocaleString()}
+            </TableCell>
+            <TableCell />
+          </TableRow>
         </SortableContext>
-      )}
-
-      {isExpanded && (
-        <TableRow className="bg-muted/30">
-          <TableCell colSpan={3} className="font-medium">
-            {category.name} Total
-          </TableCell>
-          <TableCell className="text-right">
-            $
-            {groupAccounts
-              .reduce((sum, acc) => sum + acc.debit, 0)
-              .toLocaleString()}
-          </TableCell>
-          <TableCell className="text-right">
-            $
-            {groupAccounts
-              .reduce((sum, acc) => sum + acc.credit, 0)
-              .toLocaleString()}
-          </TableCell>
-          <TableCell className="text-right">
-            $
-            {groupAccounts
-              .reduce((sum, acc) => sum + (acc.adjustedDebit - acc.debit), 0)
-              .toLocaleString()}
-          </TableCell>
-          <TableCell className="text-right">
-            $
-            {groupAccounts
-              .reduce((sum, acc) => sum + (acc.adjustedCredit - acc.credit), 0)
-              .toLocaleString()}
-          </TableCell>
-          <TableCell className="text-right">
-            $
-            {groupAccounts
-              .reduce((sum, acc) => sum + acc.adjustedDebit, 0)
-              .toLocaleString()}
-          </TableCell>
-          <TableCell className="text-right">
-            $
-            {groupAccounts
-              .reduce((sum, acc) => sum + acc.adjustedCredit, 0)
-              .toLocaleString()}
-          </TableCell>
-          <TableCell></TableCell>
-        </TableRow>
       )}
 
       <AlertDialog
