@@ -235,7 +235,7 @@ export function AdjustmentDialog({ open, onOpenChange, accounts, onSubmit }) {
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
-                        {getValidAccounts(entry.type).map((account) => (
+                        {accounts.map((account) => (
                           <SelectItem
                             key={account.code}
                             value={account.code || "a"}
