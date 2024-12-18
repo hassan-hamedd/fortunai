@@ -28,9 +28,6 @@ function parseAccounts(data: any[]): Partial<Account>[] {
     ),
   };
 
-  // Log detected headers for debugging
-  console.log("Detected headers:", headerIndices);
-
   // Validation to ensure we found critical columns
   if (headerIndices.name === -1) {
     throw new Error("Could not find required column: Account Name");

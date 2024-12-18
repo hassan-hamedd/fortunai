@@ -202,11 +202,7 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
-    console.log("over: ", over);
-    if (!over || active.id === over.id) {
-      console.log("no over or active.id === over.id");
-      return;
-    }
+    if (!over || active.id === over.id) return;
 
     const activeAccount = trialBalance.accounts.find(
       (acc) => acc.id === active.id
@@ -214,7 +210,6 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
 
     // Find if we're dropping onto a category row instead of an account
     const targetCategory = categories.find((cat) => cat.id === over.id);
-    console.log("targetCategory: ", targetCategory);
     const overAccount = trialBalance.accounts.find((acc) => acc.id === over.id);
 
     if (!activeAccount) return;

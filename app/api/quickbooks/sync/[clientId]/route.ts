@@ -26,7 +26,6 @@ export async function POST(
 
     try {
       if (new Date(integration.expiresAt) <= new Date()) {
-        console.log("refreshing tokens");
         const tokens = await qbClient.refreshTokens(integration.refreshToken);
         accessToken = tokens.access_token;
 
@@ -106,8 +105,6 @@ export async function POST(
 
     // Get or create "Uncategorized" category for accounts without classification
     const uncategorizedCategory = await findOrCreateCategory("Uncategorized");
-
-    console.log("qbaccounts 0: ", qbAccounts[0]);
 
     // Filter out accounts that already exist in the trial balance
     const existingAccountCodes = new Set(
@@ -190,7 +187,6 @@ export async function POST(
         });
 
         if (account) {
-          console.log("Account name: ", account.name);
           await prisma.transaction.create({
             data: {
               accountId: account.id,
@@ -212,7 +208,7 @@ export async function POST(
 
           updatedAccountIds.add(account.id);
         } else {
-          console.log("Account not found for line: ", line);
+          console.error("Account not found for line: ", line);
         }
       }
     }

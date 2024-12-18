@@ -73,7 +73,5 @@ export const getSignedURL = async ({
     { expiresIn: 60 } // 60 seconds
   );
 
-  console.log({ success: url });
-
   return { success: { url } };
 };

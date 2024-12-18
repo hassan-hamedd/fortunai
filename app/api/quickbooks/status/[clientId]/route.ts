@@ -7,7 +7,6 @@ export async function GET(
 ) {
   try {
     const { clientId } = params;
-    console.log("called status");
 
     const integration = await prisma.quickBooksIntegration.findUnique({
       where: { clientId },

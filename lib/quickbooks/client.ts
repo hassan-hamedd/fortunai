@@ -42,7 +42,6 @@ export class QuickBooksClient {
       this.oauthClient.setToken({
         refresh_token: refreshToken,
       });
-      console.log("refreshing tokens");
       const response = await this.oauthClient.refresh();
       return {
         access_token: response.token.access_token,
@@ -55,7 +54,9 @@ export class QuickBooksClient {
       if (
         error.message?.includes("invalid_grant") ||
         error.message?.includes("Token expired") ||
-        error.message?.includes("The Refresh token is invalid, please Authorize again.")
+        error.message?.includes(
+          "The Refresh token is invalid, please Authorize again."
+        )
       ) {
         throw new Error("REFRESH_TOKEN_EXPIRED");
       }
@@ -65,8 +66,6 @@ export class QuickBooksClient {
 
   async getAccounts(accessToken: string, realmId: string) {
     const url = `${this.baseUrl}/v3/company/${realmId}/query`;
-
-    console.log("Making request to:", url); // Add this for debugging
 
     const response = await fetch(url, {
       headers: {
@@ -89,14 +88,11 @@ export class QuickBooksClient {
     }
 
     const data = await response.json();
-    console.log("QuickBooks API Response:", data); // Add this for debugging
     return data.QueryResponse.Account;
   }
 
   async getCompanyInfo(accessToken: string, realmId: string) {
     try {
-      console.log("Getting company info with:", { realmId });
-
       const url = `${this.baseUrl}/v3/company/${realmId}/companyinfo/${realmId}`;
       const response = await fetch(url, {
         headers: {

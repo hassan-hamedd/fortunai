@@ -47,7 +47,6 @@ export function useTrialBalance(clientId: string | undefined) {
 
         newAccount.taxCategoryId = uncategorizedCategory.id;
       }
-      console.log("trialBalance accounts: ", trialBalanceRef.current.accounts);
       // Calculate the order value for the new account
       const categoryAccounts = trialBalanceRef.current.accounts
         .filter((acc) => acc.taxCategoryId === newAccount.taxCategoryId)
