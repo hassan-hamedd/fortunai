@@ -176,40 +176,97 @@ export async function POST(
 
     const updatedAccountIds = new Set<string>();
 
+    // First, let's add a helper function to create missing accounts
+    const createMissingAccount = async (
+      qbAccountRef: { value: string; name: string },
+      trialBalanceId: string,
+      clientId: string
+    ) => {
+      // Fetch the full account details from QuickBooks
+      const accountDetails = await qbClient.getAccountById(
+        accessToken,
+        integration.realmId,
+        qbAccountRef.value
+      );
+
+      if (!accountDetails) {
+        console.error(
+          `Could not fetch details for account: ${qbAccountRef.value}`
+        );
+        return null;
+      }
+
+      const categoryName = accountDetails.Classification || "Uncategorized";
+      const category = await findOrCreateCategory(categoryName);
+
+      const newAccount = await prisma.account.create({
+        data: {
+          trialBalanceId,
+          code: qbAccountRef.value,
+          name: qbAccountRef.name,
+          debit: isDebitAccount(accountDetails.Classification)
+            ? Math.max(Math.abs(accountDetails.CurrentBalance), 0)
+            : 0,
+          credit: isCreditAccount(accountDetails.Classification)
+            ? Math.max(Math.abs(accountDetails.CurrentBalance), 0)
+            : 0,
+          adjustedDebit: 0,
+          adjustedCredit: 0,
+          order: 1024, // You might want to calculate this based on existing accounts
+          taxCategoryId: category.id,
+        },
+      });
+
+      return newAccount;
+    };
+
+    // Then modify the transaction processing part
     for (const journalEntry of qbTransactions) {
-      // Each journal entry has multiple lines
       for (const line of journalEntry.Line) {
-        const account = await prisma.account.findFirst({
+        let account = await prisma.account.findFirst({
           where: {
             code: line.JournalEntryLineDetail.AccountRef.value,
             trialBalanceId: updatedTrialBalance.id,
           },
         });
 
-        if (account) {
-          await prisma.transaction.create({
-            data: {
-              accountId: account.id,
-              date: new Date(journalEntry.TxnDate),
-              description:
-                line.Description ||
-                journalEntry.DocNumber ||
-                "QuickBooks Journal Entry",
-              debit:
-                line.JournalEntryLineDetail.PostingType === "Debit"
-                  ? parseFloat(line.Amount)
-                  : 0,
-              credit:
-                line.JournalEntryLineDetail.PostingType === "Credit"
-                  ? parseFloat(line.Amount)
-                  : 0,
-            },
-          });
+        if (!account) {
+          console.log(
+            `Account not found, attempting to create: ${line.JournalEntryLineDetail.AccountRef.value}`
+          );
 
-          updatedAccountIds.add(account.id);
-        } else {
-          console.error("Account not found for line: ", line);
+          account = await createMissingAccount(
+            line.JournalEntryLineDetail.AccountRef,
+            updatedTrialBalance.id,
+            clientId
+          );
+
+          if (!account) {
+            console.error(`Failed to create account for line:`, line);
+            continue; // Skip this line if we couldn't create the account
+          }
         }
+
+        await prisma.transaction.create({
+          data: {
+            accountId: account.id,
+            date: new Date(journalEntry.TxnDate),
+            description:
+              line.Description ||
+              journalEntry.DocNumber ||
+              "QuickBooks Journal Entry",
+            debit:
+              line.JournalEntryLineDetail.PostingType === "Debit"
+                ? parseFloat(line.Amount)
+                : 0,
+            credit:
+              line.JournalEntryLineDetail.PostingType === "Credit"
+                ? parseFloat(line.Amount)
+                : 0,
+          },
+        });
+
+        updatedAccountIds.add(account.id);
       }
     }
 

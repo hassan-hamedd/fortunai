@@ -169,4 +169,28 @@ export class QuickBooksClient {
     const data = await response.json();
     return data.QueryResponse.JournalEntry || [];
   }
+
+  // app/lib/quickbooks/client.ts
+  async getAccountById(
+    accessToken: string,
+    realmId: string,
+    accountId: string
+  ) {
+    const url = `${this.baseUrl}/v3/company/${realmId}/account/${accountId}`;
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.Account;
+  }
 }
