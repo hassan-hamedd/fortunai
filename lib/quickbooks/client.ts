@@ -67,28 +67,50 @@ export class QuickBooksClient {
   async getAccounts(accessToken: string, realmId: string) {
     const url = `${this.baseUrl}/v3/company/${realmId}/query`;
 
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-        "Content-Type": "application/text",
-      },
-      method: "POST",
-      body: "SELECT * FROM Account WHERE Active = true",
+    // Add detailed logging
+    console.log("QuickBooks API Request Details:", {
+      url,
+      environment: process.env.QUICKBOOKS_ENVIRONMENT,
+      baseUrl: this.baseUrl,
+      realmId,
+      // Don't log the full token for security
+      accessTokenPrefix: accessToken.substring(0, 10) + "...",
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("QuickBooks API Error:", {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+          "Content-Type": "application/text",
+        },
+        method: "POST",
+        body: "SELECT * FROM Account WHERE Active = true",
       });
-      throw new Error(`Failed to fetch QuickBooks accounts: ${errorText}`);
-    }
 
-    const data = await response.json();
-    return data.QueryResponse.Account;
+      if (!response.ok) {
+        const errorText = await response.text();
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          url,
+          environment: process.env.QUICKBOOKS_ENVIRONMENT,
+          headers: Object.fromEntries(response.headers.entries()),
+        };
+        console.error("QuickBooks API Error Details:", errorDetails);
+        throw new Error(`Failed to fetch QuickBooks accounts: ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.QueryResponse.Account;
+    } catch (error) {
+      console.error("QuickBooks API Call Failed:", {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
   }
 
   async getCompanyInfo(accessToken: string, realmId: string) {
