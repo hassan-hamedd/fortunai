@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getSignedURL } from "@/app/create/actions";
 import {
@@ -23,6 +23,9 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { FileViewer } from "../file-viewer/file-viewer";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDistanceToNow } from "date-fns";
 
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",
@@ -55,6 +58,15 @@ interface AccountAttachment {
   createdAt: string;
 }
 
+interface AccountNote {
+  id: string;
+  content: string;
+  authorId: string;
+  authorEmail: string;
+  authorName: string;
+  createdAt: string;
+}
+
 interface AccountAttachmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -83,8 +95,41 @@ export function AccountAttachmentDialog({
   const [previewAttachment, setPreviewAttachment] =
     useState<AccountAttachment | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 3;
   const { toast } = useToast();
+  const [notes, setNotes] = useState<AccountNote[]>([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
+  const [isSubmittingNote, setIsSubmittingNote] = useState(false);
+
+  // Fetch notes when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchNotes();
+    }
+  }, [open, accountId, clientId]);
+
+  const fetchNotes = async () => {
+    setIsLoadingNotes(true);
+    try {
+      const response = await fetch(
+        `/api/clients/${clientId}/trial-balance/accounts/${accountId}/notes`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch notes");
+      }
+      const data = await response.json();
+      setNotes(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load notes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingNotes(false);
+    }
+  };
 
   const handleFileSelect = (files: File[]) => {
     setSelectedFile(files[0]);
@@ -225,6 +270,78 @@ export function AccountAttachmentDialog({
     }
   };
 
+  const handleAddNote = async () => {
+    if (!noteContent.trim()) {
+      toast({
+        title: "Error",
+        description: "Note content cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingNote(true);
+    try {
+      const response = await fetch(
+        `/api/clients/${clientId}/trial-balance/accounts/${accountId}/notes`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content: noteContent }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to add note");
+      }
+
+      const newNote = await response.json();
+      setNotes((prev) => [newNote, ...prev]);
+      setNoteContent("");
+      toast({
+        title: "Success",
+        description: "Note added successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add note",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      const response = await fetch(
+        `/api/clients/${clientId}/trial-balance/accounts/${accountId}/notes/${noteId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete note");
+      }
+
+      setNotes((prev) => prev.filter((note) => note.id !== noteId));
+      toast({
+        title: "Success",
+        description: "Note deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete note",
+        variant: "destructive",
+      });
+    }
+  };
+
   const totalPages = Math.ceil(attachments.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -239,73 +356,138 @@ export function AccountAttachmentDialog({
         </DialogTitle>
       </DialogHeader>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="space-y-4">
-          {currentAttachments.map((attachment) => (
-            <div
-              key={attachment.id}
-              className="space-y-2 p-4 rounded-lg border"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {attachment.fileType.startsWith("image/") ? (
-                    <Image className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {attachment.fileName}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    (
-                    {
-                      FILE_TYPE_NAMES[
-                        attachment.fileType as keyof typeof FILE_TYPE_NAMES
-                      ]
-                    }
-                    )
-                  </span>
+          <h3 className="text-sm font-medium">Notes</h3>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Add a note..."
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                className="min-h-[80px] max-h-[140px]"
+              />
+              <Button
+                onClick={handleAddNote}
+                disabled={isSubmittingNote || !noteContent.trim()}
+                className="shrink-0"
+              >
+                Add Note
+              </Button>
+            </div>
+            
+            <ScrollArea className="h-[200px] rounded-md border p-4">
+              {isLoadingNotes ? (
+                <div className="flex items-center justify-center h-full">
+                  <span className="text-sm text-muted-foreground">Loading notes...</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => {
-                      setPreviewAttachment(attachment);
-                      setCurrentView("preview");
-                    }}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                    className="h-8 w-8 p-0"
-                  >
-                    <a
-                      href={attachment.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
+              ) : notes.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <span className="text-sm text-muted-foreground">No notes yet</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {notes.map((note) => (
+                    <div
+                      key={note.id}
+                      className="flex justify-between items-start space-x-2 p-3 rounded-lg bg-muted"
                     >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
+                      <div className="space-y-1">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{note.authorName}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(note.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-sm">{note.content}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-destructive"
+                        onClick={() => handleDeleteNote(note.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+        </div>
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-destructive"
-                    onClick={() => handleDelete(attachment.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium">Attachments</h3>
+          <div className="space-y-4">
+            {currentAttachments.map((attachment) => (
+              <div
+                key={attachment.id}
+                className="space-y-2 p-4 rounded-lg border"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {attachment.fileType.startsWith("image/") ? (
+                      <Image className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {attachment.fileName}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      (
+                      {
+                        FILE_TYPE_NAMES[
+                          attachment.fileType as keyof typeof FILE_TYPE_NAMES
+                        ]
+                      }
+                      )
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        setPreviewAttachment(attachment);
+                        setCurrentView("preview");
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                      className="h-8 w-8 p-0"
+                    >
+                      <a
+                        href={attachment.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-destructive"
+                      onClick={() => handleDelete(attachment.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         <div className="flex justify-between items-center">

@@ -376,7 +376,7 @@ export function TrialBalanceContent({ clientId }: { clientId: string }) {
 
   return (
     <div className="mt-6 space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-y-2">
         <div className="flex items-center gap-2">
           <TrialBalanceUpload clientId={clientId} />
           <QuickBooksConnectButton clientId={clientId} />

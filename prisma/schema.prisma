@@ -33,6 +33,8 @@ model Client {
   quickBooksConnections QuickBooksConnection[]
 
   createdAt DateTime @default(now())
+
+  comments    Comment[]
 }
 
 // Trial Balance model
@@ -63,6 +65,7 @@ model Account {
   taxCategory    TaxCategory? @relation(fields: [taxCategoryId], references: [id])
   attachments    AccountAttachment[]
   order          Int         @default(0)
+  notes          AccountNote[]
 }
 
 // Transaction model for account entries
@@ -215,4 +218,28 @@ model QuickBooksConnection {
   realmId       String    // QBO company ID
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model AccountNote {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id])
+  content     String
+  authorId    String
+  authorEmail String
+  authorName  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Comment {
+  id            String   @id @default(cuid())
+  content       String
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id])
+  authorId      String   // To store who created the comment
+  authorEmail   String   // Add this field
+  authorName    String   // Add this field
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
